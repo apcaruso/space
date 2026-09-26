@@ -1,0 +1,30 @@
+{
+  "name": "spatialengine",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Esploratore dell'universo in pixel art, interamente generato da codice.",
+  "type": "module",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "typecheck": "tsc -b",
+    "check": "npm run typecheck && npm run lint && npm run test",
+    "forge": "tsx forge/cli.ts",
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^20.19.43",
+    "eslint": "^10.11.0",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.70.1",
+    "vite": "^8.3.1",
+    "vitest": "^4.1.11"
+  }
+}
