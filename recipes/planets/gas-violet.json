@@ -1,0 +1,12 @@
+{
+  "archetype": "gas",
+  "surface": { "kind": "bands", "scale": 1.6, "octaves": 3 },
+  "ramps": { "lowland": "gas-violet" },
+  "bands": { "count": 7, "turbulence": 0.45, "storms": 2, "stormRamp": "crystal-magenta" },
+  "caps": { "size": 0 },
+  "relief": 0,
+  "clouds": { "coverage": 0 },
+  "atmosphere": { "strength": 0.6, "ramp": "gas-violet" },
+  "rings": { "chance": 0.45, "ramp": "ash", "inner": 1.4, "outer": 2.2 },
+  "axis": { "roll": 20, "lean": 15 }
+}

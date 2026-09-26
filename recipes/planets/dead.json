@@ -1,0 +1,11 @@
+{
+  "archetype": "dead",
+  "surface": { "kind": "terrain", "scale": 2.6, "octaves": 5, "warp": 1.1 },
+  "levels": { "sea": 0, "shallows": 0, "high": 0.6 },
+  "ramps": { "lowland": "rock", "highland": "ash" },
+  "caps": { "size": 0 },
+  "relief": 0.12,
+  "clouds": { "coverage": 0 },
+  "atmosphere": { "strength": 0 },
+  "rings": { "chance": 0.04, "ramp": "rock" }
+}

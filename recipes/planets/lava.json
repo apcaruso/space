@@ -1,0 +1,13 @@
+{
+  "archetype": "lava",
+  "surface": { "kind": "terrain", "scale": 2.2, "octaves": 5, "warp": 0.7 },
+  "levels": { "sea": 0.36, "shallows": 0.07, "high": 0.8, "cracks": 0.04 },
+  "ramps": { "liquid": "magma", "shallows": "magma", "lowland": "basalt", "highland": "ash", "cap": "ash", "crack": "magma" },
+  "emissive": { "liquid": 3, "shallows": 1, "crack": 2 },
+  "caps": { "size": 0 },
+  "relief": 0.1,
+  "clouds": { "coverage": 0.12, "ramp": "ash", "stretch": 1.5, "octaves": 3 },
+  "atmosphere": { "strength": 0.3, "ramp": "magma" },
+  "rings": { "chance": 0.05, "ramp": "basalt" },
+  "limits": { "landMin": 0.4, "landMax": 0.95 }
+}

@@ -3,7 +3,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve, sep } from 'node:path';
 import { IndexedBuffer } from '../core/buffer';
-import { DEFAULT_AZIMUTH, DEFAULT_ELEVATION, type GenerateOptions } from '../gen/registry';
+import { registry } from '../gen/index';
+import { defaultLight, type GenerateOptions } from '../gen/registry';
 import { drawText, LINE_HEIGHT, textWidth } from '../toolkit/font';
 import { lightFromAngle } from '../toolkit/light';
 import { masterPalette } from '../toolkit/palette';
@@ -36,8 +37,8 @@ export const GEN_OPTIONS: OptionSpecs = {
   recipe: { kind: 'string', value: 'file.json', doc: 'ricetta JSON; i campi mancanti prendono i default' },
   size: { kind: 'int', value: 'px', doc: 'lato dello sprite (default: quello del generatore)' },
   frame: { kind: 'int', value: 'n', doc: 'frame dell\'animazione, default 0' },
-  light: { kind: 'number', value: 'gradi', doc: `direzione della luce: 0 = dall'alto, in senso orario (default ${DEFAULT_AZIMUTH})` },
-  elev: { kind: 'number', value: 'gradi', doc: `elevazione della luce sul piano dell'immagine (default ${DEFAULT_ELEVATION})` },
+  light: { kind: 'number', value: 'gradi', doc: "direzione della luce: 0 = dall'alto, in senso orario (default: quella del generatore)" },
+  elev: { kind: 'number', value: 'gradi', doc: "elevazione della luce sul piano dell'immagine (default: quella del generatore)" },
   scale: { kind: 'int', value: 'n', doc: 'ingrandimento intero, senza interpolazione' },
   bg: { kind: 'flag', doc: 'sfondo spazio invece della trasparenza' },
   out: { kind: 'string', value: 'out/file', short: 'o', doc: 'file di uscita, dentro out/' },
@@ -74,14 +75,15 @@ export function positiveInt(values: ParsedArgs['values'], name: string, fallback
   return v;
 }
 
-/** Generate options from --size, --frame, --light, --elev. */
-export function genOptions(values: ParsedArgs['values']): Partial<GenerateOptions> {
+/** Generate options from --size, --frame, --light, --elev; missing light angles take the generator's defaults. */
+export function genOptions(values: ParsedArgs['values'], generator: string): Partial<GenerateOptions> {
   const opts: { size?: number; frame?: number; lightDir?: GenerateOptions['lightDir'] } = {};
   if (typeof values.size === 'number') opts.size = values.size;
   if (typeof values.frame === 'number') opts.frame = values.frame;
   if (typeof values.light === 'number' || typeof values.elev === 'number') {
-    const azimuth = typeof values.light === 'number' ? values.light : DEFAULT_AZIMUTH;
-    const elevation = typeof values.elev === 'number' ? values.elev : DEFAULT_ELEVATION;
+    const light = defaultLight(registry.get(generator));
+    const azimuth = typeof values.light === 'number' ? values.light : light.azimuth;
+    const elevation = typeof values.elev === 'number' ? values.elev : light.elevation;
     opts.lightDir = lightFromAngle(azimuth, elevation);
   }
   return opts;

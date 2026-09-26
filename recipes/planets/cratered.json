@@ -1,0 +1,12 @@
+{
+  "archetype": "cratered",
+  "surface": { "kind": "craters", "scale": 1.6, "octaves": 3, "warp": 0.2 },
+  "levels": { "sea": 0, "shallows": 0, "high": 1 },
+  "ramps": { "lowland": "ash", "highland": "rock" },
+  "craters": { "density": 2, "size": 0.8, "depth": 0.6 },
+  "caps": { "size": 0 },
+  "relief": 0.05,
+  "clouds": { "coverage": 0 },
+  "atmosphere": { "strength": 0 },
+  "rings": { "chance": 0 }
+}

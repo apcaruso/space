@@ -46,6 +46,8 @@ Dopo ogni modifica visiva:
 | Singoli pixel: outline, dither, angoli | `render <gen> --seed n --scale 8 --grid --bg`, oppure `zoom <png> --x --y --w --h` su un PNG esistente |
 | Luce da un'altra direzione | `--light <gradi>` (0 = dall'alto, senso orario) e `--elev <gradi>` su render, sheet, anim |
 | Aspetto alla scala del gioco | `render <gen> --scale 1 --bg` (nell'app 1 pixel dello sprite = 1 pixel dello schermo) |
+| Coerenza tra gradini di zoom | `sizes <gen> --seed n --bg` (stesso oggetto a 16, 32, 64, 128, 256 px) |
+| Confronto tra archetipi o varianti | `params <gen> --param archetype --values a,b,c --seeds 0..7 --bg` |
 | Palette e rampe | `swatches` (fogli in `out/palette.png` e `out/palette-shading.png`) |
 | L'output è cambiato? | `golden check`; dopo un cambio voluto: alza la versione del generatore e `golden update <gen>` |
 | Generatori e parametri disponibili | `list` |
@@ -63,7 +65,7 @@ Usa sempre `--bg` per guardare: su trasparenza le etichette chiare non si leggon
 | `npm run palette` | Rigenera `style/palette.json` da `style/ramps.json` (mai modificare palette.json a mano) |
 | `npm run lint` | ESLint, comprese le regole di determinismo |
 | `npm run typecheck` | `tsc -b` su tutti i tsconfig |
-| `npm run forge -- <cmd>` | CLI forge: `render`, `sheet`, `params`, `anim`, `lint`, `golden`, `list`, `swatches`, `zoom`; `help <cmd>` per le opzioni |
+| `npm run forge -- <cmd>` | CLI forge: `render`, `sheet`, `params`, `sizes`, `anim`, `lint`, `golden`, `list`, `swatches`, `zoom`; `help <cmd>` per le opzioni |
 | `npm run dev` / `npm run build` | App Vite (root `app/`, build in `dist/`) |
 
 ## Dove sta cosa
@@ -71,11 +73,11 @@ Usa sempre `--bg` per guardare: su trasparenza le etichette chiare non si leggon
 ```
 core/       hash, derive, Rng, dmath, rumore, buffer, impronte                       (puro)
 toolkit/    colore, palette e tabelle, luce, dither, shade, outline, pulizia, font   (puro)
-gen/        registry, schema delle ricette, index (elenco), testdisc; poi planet, star,
-            asteroid, background, phenomena, megastructure, ui                       (puro)
+gen/        registry, schema delle ricette, index (elenco), testdisc, planet/; poi
+            star, asteroid, background, phenomena, megastructure, ui                 (puro)
 universe/   galassia, settori, sistemi, orbite, nomi, indirizzi                      (puro)
 style/      ramps.json (parametri) -> palette.json (generata): 63 colori + trasparente
-recipes/    oggetti speciali con seed fissato (JSON)
+recipes/    preset per generatore (planets/*.json) e oggetti speciali con seed fissato
 forge/      CLI (cli.ts, run.ts, commands/), golden dei generatori, script palette e bench
 app/        esploratore nel browser
 docs/       DESIGN.md

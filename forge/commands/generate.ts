@@ -48,7 +48,7 @@ export const render: Command = {
     const name = generatorName(args, 'render');
     const v = args.values;
     const scale = positiveInt(v, 'scale', 4);
-    const r = registry.run(name, readRecipe(v.recipe), typeof v.seed === 'number' ? v.seed : 0, genOptions(v));
+    const r = registry.run(name, readRecipe(v.recipe), typeof v.seed === 'number' ? v.seed : 0, genOptions(v, name));
     const path = outputPath(v.out, `render-${name}-${r.seed}.png`);
     savePng(path, withBackground(r.buffer, v.bg === true), scale, v.grid === true);
     io.out(`${path}  ${r.id} seed ${seedLabel(r)}  ${r.buffer.w}x${r.buffer.h} x${scale}`);
@@ -79,7 +79,7 @@ export const sheet: Command = {
     const from = typeof v.from === 'number' ? v.from : 0;
     const labels = v['no-labels'] !== true;
     const recipe = readRecipe(v.recipe);
-    const opts = genOptions(v);
+    const opts = genOptions(v, name);
     const results = Array.from({ length: count }, (_, i) => registry.run(name, recipe, from + i, opts));
     const cells: Cell[] = results.map((r) => ({ buffer: r.buffer, label: labels ? seedLabel(r) : undefined }));
     const image = composeGrid(chunk(cells, cols), { bg: v.bg === true });
@@ -116,7 +116,7 @@ export const params: Command = {
     // Validate every column first, so a bad value fails before anything is drawn.
     const recipes = texts.map((text) => withValue(base, path, parseFieldText(field, text)));
     for (const recipe of recipes) registry.recipe(name, recipe);
-    const opts = genOptions(v);
+    const opts = genOptions(v, name);
     const rows = seeds.map((seed) => recipes.map((recipe) => ({ buffer: registry.run(name, recipe, seed, opts).buffer })));
     const image = composeGrid(rows, {
       bg: v.bg === true,
@@ -151,7 +151,7 @@ export const anim: Command = {
     const fps = positiveInt(v, 'fps', 24);
     const scale = positiveInt(v, 'scale', 3);
     const start = typeof v.frame === 'number' ? v.frame : 0;
-    const base = genOptions(v);
+    const base = genOptions(v, name);
     const partials = Array.from({ length: count }, (_, i) => ({ ...base, frame: start + i }));
     const results = registry.runMany(name, readRecipe(v.recipe), typeof v.seed === 'number' ? v.seed : 0, partials);
     const frames = results.map((r) => withBackground(r.buffer, v.bg === true));
@@ -167,6 +167,31 @@ export const anim: Command = {
       io.out(`${stripPath}  ${count} frame  ${image.w}x${image.h} x2`);
     }
     reportRetries([results[0]], io);
+    return 0;
+  },
+};
+
+export const sizes: Command = {
+  name: 'sizes',
+  usage: 'sizes <gen> [--sizes 16,32,64,128,256] [--seed n] [--recipe f.json] [--frame n] [--light gradi] [--scale n] [--bg] [-o out/x.png]',
+  summary: 'lo stesso oggetto a più dimensioni affiancate, per verificare la coerenza tra gradini di zoom',
+  options: {
+    ...GEN_OPTIONS,
+    seed: { kind: 'int', value: 'n', doc: 'seed, default 0' },
+    sizes: { kind: 'seeds', value: '16,32,64', doc: 'dimensioni da affiancare (default: 16,32,64,128,256 entro i limiti del generatore)' },
+  },
+  run(args, io) {
+    const name = generatorName(args, 'sizes');
+    const v = args.values;
+    const def = registry.get(name);
+    const wanted = (v.sizes as readonly number[] | undefined) ?? [16, 32, 64, 128, 256].filter((s) => s >= def.sizes.min && s <= def.sizes.max);
+    const scale = positiveInt(v, 'scale', 2);
+    const base = genOptions(v, name);
+    const results = registry.runMany(name, readRecipe(v.recipe), typeof v.seed === 'number' ? v.seed : 0, wanted.map((size) => ({ ...base, size })));
+    const image = composeGrid([results.map((r) => ({ buffer: r.buffer, label: `${r.opts.size} px` }))], { bg: v.bg === true });
+    const path = outputPath(v.out, `sizes-${name}.png`);
+    savePng(path, image, scale);
+    io.out(`${path}  ${results[0].id} seed ${seedLabel(results[0])}  lati ${wanted.join(', ')}  ${image.w}x${image.h} x${scale}`);
     return 0;
   },
 };

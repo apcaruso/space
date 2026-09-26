@@ -1,6 +1,6 @@
 # spatialengine: design
 
-Documento di riferimento per tutte le sessioni. Le scelte fatte strada facendo vanno in [Decisioni](#13-decisioni); i dubbi ancora aperti in [Questioni aperte](#14-questioni-aperte).
+Documento di riferimento per tutte le sessioni. Le scelte fatte strada facendo vanno in [Decisioni](#14-decisioni); i dubbi ancora aperti in [Questioni aperte](#15-questioni-aperte).
 
 ## 1. Visione
 
@@ -71,7 +71,7 @@ generate(recipe, seed, opts) -> { buffer, descriptor }
 
 - `recipe`: parametri JSON del generatore (archetipo, rampe, soglie…), già validati e completati con i default dallo schema (§3, "Ricette").
 - `seed`: uint32; ogni sottosistema ne deriva il proprio con `derive(seed, "nome")`.
-- `opts`: ciò che non è identità dell'oggetto: `size` (lato in pixel, un gradino di zoom), `frame` (tick intero), `lightDir` (versore verso la stella, coordinate dello schermo).
+- `opts`: ciò che non è identità dell'oggetto: `size` (dimensione dell'oggetto in pixel a quel gradino di zoom, per un pianeta il diametro; il buffer può essere più grande per outline, bagliore e anelli, e il descrittore dice dove sta l'oggetto), `frame` (tick intero), `lightDir` (versore verso la stella, coordinate dello schermo).
 - `buffer`: `IndexedBuffer` di indici di palette. La conversione in RGBA avviene solo alla fine, in `app/` o `forge/`.
 - `descriptor`: dati derivati dalla stessa generazione, solo JSON: raggio, classificazione, mappa di superficie, punti notevoli.
 - **Versione**: ogni generatore dichiara un id versionato (`"planet@1"`). Se l'output cambia, si alza la versione o si aggiornano consapevolmente i golden.
@@ -79,7 +79,9 @@ generate(recipe, seed, opts) -> { buffer, descriptor }
 Ogni generatore è un oggetto `defineGenerator({ name, version, description, recipe, sizes, loop, generate, validators, maxAttempts, goldens })` in `gen/`, elencato in `gen/index.ts`:
 
 - `recipe`: schema dichiarativo della ricetta;
+- `resolve` (facoltativo): trasforma l'input grezzo prima della validazione (preset, archetipo scelto dal seed); riceve il seed richiesto, mai quello di un ritentativo, così i ritentativi conservano ciò che ha scelto;
 - `sizes`: lato minimo, massimo e di default;
+- `light` (facoltativo): luce di default del generatore (azimut ed elevazione), usata anche per la resa canonica;
 - `loop`: frame di un giro dell'animazione;
 - `validators`: funzioni `check(result, recipe)` che restituiscono un motivo di scarto o `null`;
 - `maxAttempts`: tentativi massimi, default 8;
@@ -136,7 +138,7 @@ Le regole valgono per tutti i moduli puri. Sono riportate anche in `CLAUDE.md`.
 | ESLint `no-restricted-syntax` | `**`, `**=`, `for...in`. |
 | ESLint `no-restricted-imports` | Pacchetti npm nei moduli puri; dipendenze tra moduli non ammesse. |
 | `tsconfig.pure.json` | Solo `lib: ES2023`, nessun tipo DOM o Node: usarli è un errore di tipo. |
-| Test golden | Stessi byte a parità di input; cambi di output intercettati. Core: `tests/golden/core.json` (§5.7); generatori: `tests/golden/<gen>.json`, verificati da `forge golden check` e da `npm test` (§10). |
+| Test golden | Stessi byte a parità di input; cambi di output intercettati. Core: `tests/golden/core.json` (§5.7); generatori: `tests/golden/<gen>.json`, verificati da `forge golden check` e da `npm test` (§11). |
 
 Le regole valgono anche per i test dei moduli puri, che in più possono importare `vitest` e usare le funzioni di `Math` come riferimento per `core/dmath`.
 
@@ -185,7 +187,7 @@ Collisioni misurate su una griglia di 1000×1000 settori (coordinate da −500 a
 - Solo `+ - * /` e `Math.sqrt`, più operazioni esatte per definizione (`Math.floor`, `Math.round`, `Math.abs`, confronti) e la lettura dei bit di un double con `DataView` (in `log`).
 - Algoritmi di fdlibm: riduzione dell'argomento alla Cody-Waite (π/2 in due parti; `ln 2` in due parti), polinomi minimax sull'intervallo ridotto, tabella esatta delle potenze di 2.
 - Errore massimo misurato contro `Math.*` (assoluto per |risultato| ≤ 1, relativo sopra): circa 1e-16 per `sin`, `cos`, `atan`, `asin`, `exp`, `log`; 4e-16 per `tan`, `acos`, `atan2`; 4e-15 per `pow`. L'obiettivo era 1e-7.
-- `sin`, `cos`, `tan` sono precise per |x| < 1e6; oltre restano deterministiche ma perdono precisione. Le fasi temporali vanno ridotte con il modulo intero prima (§9).
+- `sin`, `cos`, `tan` sono precise per |x| < 1e6; oltre restano deterministiche ma perdono precisione. Le fasi temporali vanno ridotte con il modulo intero prima (§10).
 - `pow` con esponente intero fino a 1024 usa quadrati ripetuti (`pow(2, 10) === 1024`); `atan2(0, 0)` è 0 e il segno dello zero non è distinto.
 
 ### 5.4 Rumore (`core/noise.ts`)
@@ -221,7 +223,7 @@ Collisioni misurate su una griglia di 1000×1000 settori (coordinate da −500 a
 
 ### 5.7 Golden del core
 
-`core/golden.test.ts` confronta con `tests/golden/core.json` le impronte di campi di rumore fissati (64×64: value, gradient, fbm, warp, Worley F1, F2−F1 e id delle celle), di una griglia di `hashCoords`, di percorsi `derive`, di 1024 uscite di `Rng` e di 2560 valori di `dmath`. Se una di queste cambia anche di un bit, il test fallisce. Per un cambio voluto: si rigenera con `npm test -- -u` e si registra il motivo in [Decisioni](#13-decisioni).
+`core/golden.test.ts` confronta con `tests/golden/core.json` le impronte di campi di rumore fissati (64×64: value, gradient, fbm, warp, Worley F1, F2−F1 e id delle celle), di una griglia di `hashCoords`, di percorsi `derive`, di 1024 uscite di `Rng` e di 2560 valori di `dmath`. Se una di queste cambia anche di un bit, il test fallisce. Per un cambio voluto: si rigenera con `npm test -- -u` e si registra il motivo in [Decisioni](#14-decisioni).
 
 ## 6. Palette e toolkit
 
@@ -269,12 +271,70 @@ Le coppie più vicine sono `rock`/`ash` e `basalt`/`metal-dark`, che condividono
 | | **Tabelle** (`IndexTable`, 256 voci indice → indice): `swapTable(from, to)` (palette swap, per posizione, scalata se le lunghezze differiscono), `cycleTable(ramp, frame, { period, from, to })` (palette cycling su tick intero), `lightTable(delta)` (sposta ogni indice di `delta` toni lungo la rampa di casa, per schiarire o scurire senza alpha; 0 resta 0 e nulla diventa 0). `applyTable(buf, table)` e `composeTables(a, b)`. |
 | `light.ts` | `direction(x, y, z)`; `lightFromAngle(azimut, elevazione)` (gradi; azimut 0 = luce dall'alto, senso orario); `lightValue(normale, luce, opts)` → livello continuo; `quantizeLevel(v, opts, soglia, larghezza)`; `lightLevel(...)`. Opzioni: `levels`, `terminator` (n·l sotto cui è ombra, default 0), `ambient` (livello del lato in ombra, default 0), `minLevel` (materiali emissivi). Il lato illuminato divide n·l in bande di uguale ampiezza; il lato in ombra non viene mai sfumato. |
 | `dither.ts` | `BAYER2`, `BAYER4`, `BAYER8` (costruite per raddoppio ricorsivo), `bayerThreshold(m, x, y)` con coordinate locali dell'oggetto (anche negative), `ditherQuantize(v, soglia, larghezza)`: i confini tra livelli cadono sugli interi, `larghezza` è l'ampiezza della fascia sfumata attorno a ciascun confine (1 = tutta, 0 = bande nette). |
-| `shade.ts` | `shade(altezze, materiali, tabellaMateriali, palette, opts)`: normali con limitatore **minmod** (gli spigoli restano netti), livello di luce, dither **solo dove la luce varia in modo monotono per 2 pixel per lato** (facce piatte e spigoli restano pieni), livello → tono. Il tono più scuro è riservato all'outline (`reserveDarkest`, default sì); i livelli sono al massimo i toni disponibili. Default: 4 livelli, `BAYER4`, fascia 0.3. |
-| `outline.ts` | `outline(buf, palette, { diagonal, inner, skip })`: outline esterno di 1 px, ortogonale di default, con il tono più scuro della rampa del pixel adiacente (vince il più scuro dove si toccano più materiali); `inner` traccia linee interne dove si toccano rampe non imparentate, sul lato più chiaro; `skip` esclude rampe (emissive). Non allarga il buffer: serve un margine trasparente. |
+| `shade.ts` | `shade(altezze, materiali, tabellaMateriali, palette, opts)`: normali con limitatore **minmod** (gli spigoli restano netti), livello di luce, dither **solo dove la luce varia in modo monotono per 2 pixel per lato** (facce piatte e spigoli restano pieni), livello → tono. Il tono più scuro è riservato all'outline (`reserveDarkest`, default sì); i livelli sono al massimo i toni disponibili. Default: 4 livelli, `BAYER4`, fascia 0.3. Per materiale: `emissive` (livello minimo), `albedo` (livelli in più o in meno sul lato illuminato: bande, bordi e fondi di cratere), `shadowTone`. Opzioni dallo step 4: `shadow` (rampa del lato in ombra: i materiali non emissivi vi prendono un tono scuro, così la notte di un pianeta è buia anche per nuvole e ghiaccio) e `shape` (altezze della forma di base: il lato in ombra si decide su quelle, così il rilievo non sparge pixel illuminati nella notte). |
+| `outline.ts` | `outline(buf, palette, { diagonal, inner, skip })`: outline esterno di 1 px, ortogonale di default, con il tono più scuro della rampa del pixel adiacente (vince il più scuro dove si toccano più materiali); `inner` traccia linee interne dove si toccano rampe non imparentate, sul lato più chiaro; `skip` esclude rampe (emissive); `ceiling` sostituisce i colori di outline troppo chiari (il tono più scuro di nuvole e ghiaccio è un grigio) con un indice scuro. Non allarga il buffer: serve un margine trasparente. |
 | `cleanup.ts` | `removeOrphans` (pixel senza vicini dello stesso indice → il valore più comune attorno; da usare sulle mappe dei materiali, non sull'output sfumato), `fillHoles` (buchi trasparenti di 1 px), `fixCorners(buf, lineIndices?)` (linee pixel-perfect: toglie gli angoli a L dei gradini da 1 px, conserva gli angoli veri e i blocchi). |
 | `font.ts` | Font bitmap 3×5: cifre, maiuscole, punteggiatura di base e `@`. `drawText(buf, testo, x, y, indice)`, `textWidth(testo)`, `CHARSET`. Minuscole disegnate come maiuscole, caratteri sconosciuti come `?`. Unico elemento grafico definito a mano; un test verifica che ogni glifo sia diverso dagli altri. |
 
-## 7. Linee guida visive
+## 7. Generatori
+
+### 7.1 Pianeti (`gen/planet/`)
+
+`planet@1`, diametro da 16 a 256 px (default 64), giro di 96 frame, luce di default radente (azimut 290°, elevazione 25°) per un terminatore leggibile.
+
+**Pipeline**
+
+1. **Mappe equirettangolari** 2H × H di superficie e nuvole, campionando campi 3D sulla sfera unitaria (nessuna cucitura). H ≈ 1,6 × diametro: circa una cella per pixel al centro del disco. I campi si normalizzano in [0, 1] con minimo e massimo misurati su 1024 punti di Fibonacci della sfera, sempre con tutte le ottave: le soglie significano la stessa cosa a ogni dimensione. La copertura delle nuvole è un quantile su quegli stessi punti, quindi `clouds.coverage` è davvero la frazione di cielo coperta.
+2. **Classificazione** in materiali: liquido, liquido basso, pianura, altopiano (soglie `levels`), crepe (rete di rumore "ridged", sottile), calotte (in funzione di |latitudine| e altezza). Tre forme di superficie: `terrain` (fbm con domain warp), `bands` (latitudine deformata da un flusso zonale, 3 tinte con albedo −1/0/+1, tempeste ovali: una grande e qualche minore) e `craters` (due strati di Worley: fondo scuro e basso, bordo chiaro e rilevato).
+3. **Pulizia in spazio mappa**: filtro di maggioranza (2 passaggi, wrap in longitudine) su superficie e nuvole; le crepe sono escluse. Stabile durante la rotazione, a differenza di una pulizia sullo schermo.
+4. **Proiezione**: per ogni pixel del disco, normale della sfera → latitudine e longitudine rispetto all'asse del pianeta (inclinato sullo schermo e verso chi guarda) → cella della mappa (al più vicino). La longitudine ruota con il frame; le nuvole hanno un periodo loro (default 48, un divisore di 96, così la GIF gira in loop).
+5. **Shading** con `shade`: altezze = sfera + rilievo, forma di base = sfera, rampa d'ombra `space`. I materiali emissivi (magma) tengono un livello minimo e brillano sul lato notte.
+6. **Outline** selettivo con tetto di luminosità, **bordo d'atmosfera** sul lato illuminato (l'anello esterno, e da 48 px anche il bordo interno).
+7. **Anelli** nel piano equatoriale: metà posteriore, poi il pianeta, poi metà anteriore. Divisioni e anelli più chiari o più scuri da rumore radiale; l'ombra del pianeta sugli anelli prende il colore della notte.
+
+**Ricetta e archetipi.** Una sola ricetta per tutti (superficie, livelli, rampe, emissività, calotte, rilievo, bande, crateri, nuvole, atmosfera, anelli, asse, periodo, limiti dei validatori). I preset in `recipes/planets/*.json` sovrascrivono parti della ricetta; `resolve` sceglie l'archetipo (dall'input o, con `auto`, dal seed richiesto con pesi), poi una variante del preset dal seed, poi applica l'input sopra.
+
+| Archetipo | Preset | Tratti |
+|---|---|---|
+| `terran` | terran | oceani, bassi fondali, continenti verdi, altopiani, calotte, nuvole, atmosfera azzurra |
+| `ocean` | ocean | mare quasi ovunque, isole di sabbia e verde, bassi fondali turchesi, nuvole a strisce |
+| `desert` | desert, desert-red | sabbia (chiara o ruggine) e rocce, piccole calotte, poche nuvole |
+| `ice` | ice | ghiaccio e neve, pozze turchesi, crepe blu, calotte ampie |
+| `lava` | lava | crosta di basalto e cenere, magma emissivo (nuclei gialli, bordi rossi), crepe incandescenti, fumo |
+| `toxic` | toxic | mari acidi turchesi, terre color bronzo, nuvole verdi dense, atmosfera verde |
+| `gas` | gas-warm, gas-cold, gas-violet | bande zonali, tempeste ovali, anelli nel 45% dei casi |
+| `cratered` | cratered, cratered-ice | lune grigie o ghiacciate coperte di crateri, senza atmosfera |
+| `dead` | dead, dead-basalt | rocce e basalti senza liquidi né atmosfera |
+
+**Livello di dettaglio** (mai generare grande e rimpicciolire):
+
+| Diametro | Ottave | Crateri | Crepe | Bande | Dither |
+|---|---|---|---|---|---|
+| < 32 | −2 | 1 strato | no | metà | Bayer 2×2, fascia 0,15 |
+| 32–63 | −1 | 1 strato | sì | tutte | Bayer 4×4, fascia 0,3 |
+| 64–127 | tutte | 1 strato | sì | tutte | Bayer 4×4, fascia 0,3 |
+| ≥ 128 | tutte | 2 strati | sì | tutte | Bayer 4×4, fascia 0,3 |
+
+Le ottave in meno non cambiano la normalizzazione (si somma un prefisso della stessa serie), quindi coste e bande restano dove sono.
+
+**Descrittore**: archetipo, raggio, centro nel buffer, quota di terra, composizione per materiale, asse (roll e lean in gradi), anelli (raggi interno ed esterno o `null`), mappa di superficie 64 × 32 (materiali e altezze codificati un simbolo per cella, legenda inclusa, senza filtro di maggioranza) e `features: []` (punti notevoli per le rovine dello step 8 e il catalogo dello step 9). Tutto dipende solo da ricetta e seed: identico a ogni diametro, frame e luce.
+
+**Validatori** (soglie tarate con `forge lint` su 128 seed): `land` (quota di terra entro i limiti del preset, per esempio terrestre 15–90%), `bands` (una tinta di banda sopra il 62% = bande troppo uniformi), `craters` (crateri su meno del 18% o più del 60%).
+
+**Prestazioni** (Node, prima resa con mappe, validazione e descrittore → frame successivi con le mappe in cache): 64 px ~60 → 3 ms, 128 px ~240 → 6 ms, 256 px ~770 → 16 ms. Le mappe stanno in una piccola cache (8 voci) nel modulo: non dipendono da frame e luce, e una hit restituisce esattamente ciò che una ricostruzione produrrebbe.
+
+**Punti deboli noti** (dalle ultime revisioni dei fogli):
+
+- Le nuvole dei terrestri sono macchie bianche dai bordi a gradini, senza vortici né ombre sulla superficie.
+- Il tossico deve la sua identità soprattutto alle nuvole verdi: i mari acidi si vedono poco.
+- Il roccioso morto è un motivo "mimetico" generico, senza canyon o altipiani riconoscibili; il deserto varia poco oltre i due colori.
+- Nei giganti le tempeste sono spesso piccole o sul lato notte, e dentro le bande non c'è dettaglio longitudinale a 128 px e oltre.
+- Gli anelli quasi di taglio hanno bordi a scalini; il pianeta non riceve l'ombra degli anelli.
+- Il lato notte è una tinta piatta; la parte illuminata, con luce da 25°, è una "lente" che a 16 px sembra un limone.
+- Vicino al bordo il campionamento al più vicino comprime molte celle in un pixel e lascia qualche scalino.
+- Asse e anelli si decidono dal seed del tentativo accettato: un ritentativo può cambiarli (l'archetipo invece resta).
+
+## 8. Linee guida visive
 
 - **Risoluzione interna 480×270**, upscale intero. L'upscale è calcolato in pixel del dispositivo (`devicePixelRatio`), così un pixel del gioco è sempre un blocco esatto di pixel dello schermo.
 - **Lo zoom non scala mai i pixel.** Lo zoom della camera è continuo, ma a ogni livello gli oggetti vengono generati alla dimensione giusta, a gradini discreti e con cache. Un pixel dell'oggetto è sempre un pixel dello schermo. Chiave di cache: (generatore@versione, ricetta, seed, gradino, frame, luce).
@@ -283,7 +343,7 @@ Le coppie più vicine sono `rock`/`ash` e `basalt`/`metal-dark`, che condividono
 - **Outline con il tono più scuro della rampa del materiale**, non nero.
 - **Si genera direttamente alla dimensione finale**, mai grande e poi rimpicciolito.
 
-## 8. Universo
+## 9. Universo
 
 - **Gerarchia**: seed di galassia → struttura della galassia (bracci, densità) → settori su griglia intera → sistemi → stelle, pianeti, lune, anelli, fasce di asteroidi → superfici.
 - **Settori**: ogni settore si genera da solo a partire dal seed di galassia e dalle sue coordinate intere, senza dipendere dai vicini né dall'ordine di esplorazione.
@@ -301,13 +361,13 @@ Le coppie più vicine sono `rock`/`ash` e `basalt`/`metal-dark`, che condividono
 - **Indirizzi**: una stringa che identifica esattamente un punto dell'universo (seed di galassia, settore, sistema, percorso del corpo, zoom, tick). Serve per i link e per il catalogo. Formato da definire allo step 6.
 - **Rarità**: i fenomeni rari hanno una distribuzione controllata e devono essere trovabili esplorando. Da progettare allo step 8.
 
-## 9. Tempo
+## 10. Tempo
 
 - Il tempo è un **tick intero**. L'app fa avanzare il tick di un moltiplicatore per frame (pausa = 0).
 - **Lo stato a un tick si calcola direttamente dal tick**, senza simulazione incrementale: posizioni orbitali, rotazioni e nuvole sono funzioni di (seed, tick). Saltare nel tempo costa O(1) e un link con un tick riporta esattamente allo stesso stato.
 - Le fasi si calcolano con il modulo intero prima di passare ai float: `phase = (tick % period) / period`. Così la precisione non degrada con tick grandi (fino a 2^53).
 
-## 10. Forge e workflow
+## 11. Forge e workflow
 
 `forge/` è la CLI con cui si guarda il lavoro: `npm run forge -- <comando>`, `help <comando>` per tutte le opzioni.
 
@@ -316,6 +376,7 @@ Le coppie più vicine sono `rock`/`ash` e `basalt`/`metal-dark`, che condividono
 | `render <gen>` | Un oggetto in PNG (`--seed --size --frame --light --elev --recipe --scale --grid --bg -o`); stampa il descrittore |
 | `sheet <gen>` | Griglia di varianti di seed consecutivi (`--count 64 --from --cols 8`) con il seed sotto ogni cella; `12r2` = scelto al tentativo 2, `12!` = nessun tentativo valido |
 | `params <gen>` | Un parametro della ricetta nelle colonne (`--param a.b --values 1,2,3`), i seed nelle righe (`--seeds 0..7`) |
+| `sizes <gen>` | Lo stesso oggetto a più dimensioni affiancate (`--sizes 16,32,64,128,256`), per la coerenza tra gradini |
 | `anim <gen>` | GIF in loop (`--frames`, default un giro del generatore, `--fps 24`); `--strip` scrive anche la striscia dei frame in PNG |
 | `lint <gen>` | Esegue i validatori su molti seed (`--count 256`): quanti passano al primo tentativo, quanti dopo i ritentativi, quanti mai, e perché |
 | `golden check\|update [gen]` | Confronta con `tests/golden/<gen>.json`, o lo riscrive consapevolmente |
@@ -335,7 +396,7 @@ Fuori dalla CLI: `npm run bench` (benchmark del core, §5.4) e `npm run palette`
 
 **Fine di ogni step**: `npm run check` verde (typecheck, lint, test); fogli di preview aggiornati in `out/`; questo documento aggiornato se sono cambiate decisioni; un commit. Poi ci si ferma e si riassume, senza iniziare lo step successivo.
 
-## 11. Stack e tooling
+## 12. Stack e tooling
 
 - **TypeScript 6.0 strict**, Node ≥ 20.19, npm, un solo package, ESM.
 - **Vitest 4** per i test (`*.test.ts` accanto al codice), **tsx** per la CLI, **Vite 8** per l'app (`root: app`, build in `dist/`).
@@ -346,7 +407,7 @@ Fuori dalla CLI: `npm run bench` (benchmark del core, §5.4) e `npm run palette`
   - `tsconfig.app.json`: `app/`; DOM e `vite/client`.
 - **Dipendenze esterne solo in `forge/` e `app/`**: `pngjs` (dallo step 2) e `gifenc` (dallo step 3) in `forge/`. `app/` non importa nulla da `forge/`.
 
-## 12. Roadmap
+## 13. Roadmap
 
 | Step | Contenuto | Stato |
 |---|---|---|
@@ -354,14 +415,14 @@ Fuori dalla CLI: `npm run bench` (benchmark del core, §5.4) e `npm run palette`
 | 1 | **Core deterministico**: hash e `derive`, `Rng`, `dmath` (trigonometria, `exp`, `log`, `pow`… solo con `+ - * /` e `sqrt`), rumore da hash di reticolo (value, gradient, fbm, domain warp, Worley), buffer indicizzati, impronte e golden del core | fatto |
 | 2 | **Stile, palette e toolkit**: palette master generata a rampe con hue shift; luce quantizzata, dither Bayer, shading, outline selettivo, pulizia, tabelle di swap/cycling/luce, RGBA, font 3×5 | fatto |
 | 3 | **Forge CLI**: registro dei generatori, schema delle ricette, ritentativi, generatore di prova; render, sheet, params, anim, lint, golden, list, swatches, zoom | fatto |
-| 4 | **Pianeti**: SDF e rasterizzazione in `core/` (rinviate dagli step 1–2); archetipi, mappa di superficie, rotazione, nuvole, terminatore, lune e anelli; descrittore | |
-| 5 | **Stelle, asteroidi e sfondi** | |
+| 4 | **Pianeti**: 9 archetipi con preset, mappe di superficie e nuvole, rotazione, terminatore, atmosfera, anelli, livello di dettaglio, descrittore, validatori; `forge sizes` | fatto |
+| 5 | **Stelle, asteroidi e sfondi**; SDF e rasterizzazione in `core/` se servono (per esempio agli asteroidi) | |
 | 6 | **Universo**: galassia, settori, sistemi, orbite, nomi, indirizzi | |
 | 7 | **Esploratore**: renderer, zoom continuo a gradini con cache, tempo, interfaccia, pannello informativo; `forge view` | |
 | 8 | **Fenomeni rari e megastrutture**: buchi neri, pulsar, rovine, megastrutture | |
 | 9 | **Catalogo e scoperte**: catalogo personale, link agli indirizzi | |
 
-## 13. Decisioni
+## 14. Decisioni
 
 Formato: data, step, decisione e motivo. Le voci non si cancellano: se una decisione cambia, se ne aggiunge una nuova che la sostituisce.
 
@@ -373,7 +434,7 @@ Formato: data, step, decisione e motivo. Le voci non si cancellano: se una decis
 - **2026-09-26, step 0: dipendenze tra moduli imposte dal lint.** `core` ← `toolkit` ← `gen`, `core` ← `universe`; `universe` non importa da `toolkit` né da `gen`; `app` non importa da `forge`. `gen` può importare da `universe`.
 - **2026-09-26, step 0: `noUncheckedIndexedAccess` disattivato.** I generatori leggono typed array in cicli stretti, e il flag trasformerebbe ogni `buf[i]` in `number | undefined`.
 - **2026-09-26, step 0: test accanto al codice.** `*.test.ts` nello stesso modulo, soggetti alle stesse regole di lint e typecheck del modulo.
-- **2026-09-26, step 0: stato dal tick.** Orbite, rotazioni e nuvole sono funzioni dirette di (seed, tick), senza simulazione incrementale (vedi §9).
+- **2026-09-26, step 0: stato dal tick.** Orbite, rotazioni e nuvole sono funzioni dirette di (seed, tick), senza simulazione incrementale (vedi §10).
 - **2026-09-26, step 1: seed a 32 bit.** Seed e hash sono uint32. Su milioni di oggetti qualche coppia avrà lo stesso seed (e quindi lo stesso aspetto, a parità di ricetta): è accettato, perché l'identità di un oggetto è il suo indirizzo, non il suo seed. Nessun codice deve usare il seed come chiave univoca.
 - **2026-09-26, step 1: `derive` a più componenti.** `derive(seed, ...parts)` con nomi e interi sicuri (anche negativi, a 64 bit), gerarchica e iniettiva tra figli diretti dello stesso genitore (§5.1). I numeri non interi lanciano un errore invece di essere arrotondati in silenzio.
 - **2026-09-26, step 1: `hashCoords` a stadi.** L'hash del reticolo è una catena x → y → z; gli stadi sono esportati così il rumore calcola una volta sola i prefissi comuni agli angoli della cella. Stessi bit di `hashCoords`, fbm 5 ottave da ~46 a ~29 ms su 256×256.
@@ -410,13 +471,26 @@ Formato: data, step, decisione e motivo. Le voci non si cancellano: se una decis
 - **2026-09-26, step 3: testi della CLI in italiano.** Riepiloghi, opzioni, messaggi ed errori delle ricette sono in italiano, come stabilito allo step 0; gli errori interni per chi scrive un generatore restano in inglese come il codice.
 - **2026-09-26, step 3: etichette del foglio attive di default.** `sheet` scrive sempre il seed sotto le celle; `--labels` è accettato, `--no-labels` le toglie. Il foglio senza etichette è raramente utile.
 - **2026-09-26, step 3: `swatches` e `zoom` al posto degli script dello step 2.** Il foglio della palette e quello di shading ora si rigenerano con `forge swatches`; `forge zoom` ritaglia e ingrandisce qualsiasi PNG. Il font 3×5 guadagna `@` per gli id dei generatori.
+- **2026-09-26, step 4: SDF e rasterizzazione rinviate ancora.** Disco e anelli dei pianeti si calcolano analiticamente per pixel; un modulo SDF senza un utilizzatore reale sarebbe speculativo. Arriverà con il primo generatore di forme irregolari (asteroidi, megastrutture).
+- **2026-09-26, step 4: `size` è la dimensione dell'oggetto, il buffer può essere più grande.** Per un pianeta `size` è il diametro, così la scala resta la stessa con o senza anelli; il descrittore riporta il centro nel buffer.
+- **2026-09-26, step 4: una ricetta per tutti gli archetipi, preset come sovrapposizioni.** I preset sono ricette parziali in `recipes/planets/`; il nuovo hook `resolve` del registro sceglie archetipo e variante dal seed richiesto, così un ritentativo non trasforma un deserto in un gigante gassoso.
+- **2026-09-26, step 4: normalizzazione e soglie sulla sfera, non sulla mappa.** Minimo, massimo e quantili si misurano su punti di Fibonacci con tutte le ottave: coste e coperture restano le stesse a ogni diametro, e le ottave tolte ai piccoli diametri non spostano nulla.
+- **2026-09-26, step 4: lato notte buio con la rampa d'ombra.** Dalle prime preview: il tono 1 di nuvole e ghiaccio è un grigio chiaro, quindi la notte sembrava illuminata. Ora il lato in ombra prende i toni scuri di `space` (un po' meno scuri per nuvole e calotte), e si decide sulla sfera liscia: il rilievo aveva sparso pixel chiari oltre il terminatore.
+- **2026-09-26, step 4: luce di default per generatore.** I pianeti usano azimut 290° ed elevazione 25°: con 40° il terminatore quasi non si vedeva, con 12° metà disco era buia e la superficie si leggeva poco.
+- **2026-09-26, step 4: filtro di maggioranza in spazio mappa.** Compatta le regioni e liscia le coste senza sfarfallare durante la rotazione; non si applica alla mappa del descrittore, dove eroderebbe i crateri (il validatore scartava il 90% delle lune).
+- **2026-09-26, step 4: outline con tetto di luminosità.** Il tono più scuro delle rampe chiare (nuvole, ghiaccio) lasciava pixel grigi sul contorno.
+- **2026-09-26, step 4: magma a due livelli di emissione, tossico senza emissione.** Magma profondo più luminoso del liquido basso (nuclei gialli, bordi rossi); il mare acido emissivo di livello 1 finiva sul verde chiaro e di notte sembrava illuminato.
+- **2026-09-26, step 4: periodo delle nuvole 48.** Con 64 la GIF da 96 frame saltava al ritorno; un divisore del giro della superficie tiene il loop.
+- **2026-09-26, step 4: cache delle mappe nel generatore.** Otto voci, chiave = seed, ricetta, risoluzione e livello di dettaglio. Stato nel modulo che non cambia l'output: un'animazione da 96 frame costa una generazione di mappe invece di 96.
+- **2026-09-26, step 4: mappe del descrittore compatte nei golden.** Il descrittore porta la mappa 64 × 32 come stringhe (un simbolo per cella); nei golden le stringhe lunghe diventano la loro impronta, così i file restano leggibili (8 KB per 7 casi).
+- **2026-09-26, step 4: comando `forge sizes`.** Serve a `out/step4-sizes.png` e in generale alla verifica di coerenza tra gradini di zoom.
 
-## 14. Questioni aperte
+## 15. Questioni aperte
 
 - **Spazio nella palette**: la palette è piena (63 su 63). Le rampe che serviranno agli step 5–8 (classi spettrali delle stelle, fenomeni) dovranno riusare le rampe esistenti, condividere di più, usare meno toni, oppure alzare il limite di 64 colori. Step 5.
 - **Cache nell'app**: la scelta del tentativo (resa canonica) e gli sprite per gradino vanno messi in cache per (generatore@versione, ricetta, seed). Step 7.
 - **Determinismo verificato anche nel browser**: come confrontare gli stessi golden in Node e nel browser. Step 3 o 7.
-- **Descrittore senza rasterizzare**: serve per il pannello e per trovare oggetti rari da lontano senza generare pixel. Step 4 o 6.
+- **Descrittore senza rasterizzare**: il descrittore dei pianeti viene già dalle mappe e non dai pixel, ma `generate` disegna sempre. Per l'universo servirà un `describe(recipe, seed)` senza resa, per il pannello e per cercare oggetti rari da lontano. Step 6.
 - **Forma dell'universo**: una galassia finita su un piano infinito di settori, o altro? Step 6.
 - **Gradini di dimensione**: quali (potenze di 2, √2…) e budget della cache. Step 7.
 - **Persistenza del catalogo**: storage del browser, export, entrambi. Step 9.

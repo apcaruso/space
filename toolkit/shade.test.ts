@@ -93,4 +93,39 @@ describe('shade', () => {
     expect(() => shade(new FloatField(3, 2), mats, [{ ramp: 'rock' }], palette, { light: direction(0, 0, 1) })).toThrow(RangeError);
     expect(() => shade(heights, mats.fill(2), [{ ramp: 'rock' }], palette, { light: direction(0, 0, 1) })).toThrow(RangeError);
   });
+
+  it('brightens or darkens materials by albedo on the lit side only', () => {
+    const [heights, mats] = flat(4, 2);
+    for (let x = 2; x < 4; x++) for (let y = 0; y < 2; y++) mats.set(x, y, 2);
+    const table = [{ ramp: 'rock' }, { ramp: 'rock', albedo: -1 }];
+    const lit = shade(heights, mats, table, palette, { light: direction(0.6, 0, 0.8), dither: null });
+    expect(palette.toneOf(lit.get(0, 0)) - palette.toneOf(lit.get(3, 0))).toBe(1);
+    const night = shade(heights, mats, table, palette, { light: direction(0, 0, -1) });
+    expect(night.get(0, 0)).toBe(night.get(3, 0));
+  });
+
+  it('paints the shadow side with the shadow ramp, except emissive materials', () => {
+    const [heights, mats] = flat(2, 2);
+    mats.set(1, 1, 2);
+    const table = [{ ramp: 'cloud', shadowTone: 2 }, { ramp: 'magma', emissive: 2 }];
+    const out = shade(heights, mats, table, palette, { light: direction(0, 0, -1), shadow: 'space' });
+    expect(out.get(0, 0)).toBe(palette.index('space', 2));
+    expect(palette.ramp('magma').indices).toContain(out.get(1, 1));
+  });
+
+  it('decides the shadow side on the base shape, not on the relief', () => {
+    const [sphereH, mats] = sphere(24, 10);
+    const bumpy = new FloatField(24, 24);
+    for (let i = 0; i < bumpy.data.length; i++) bumpy.data[i] = sphereH.data[i] + ((i * 7919) % 5) * 0.8;
+    const light = direction(-1, 0, 0.2);
+    const opts = { light, shadow: 'space' };
+    const night = palette.index('space', 1);
+    const count = (buf: IndexedBuffer, x0: number) => {
+      let lit = 0;
+      for (let y = 4; y < 20; y++) for (let x = x0; x < 20; x++) if (buf.get(x, y) !== 0 && buf.get(x, y) !== night) lit++;
+      return lit;
+    };
+    expect(count(shade(bumpy, mats, [{ ramp: 'rock' }], palette, opts), 16)).toBeGreaterThan(0);
+    expect(count(shade(bumpy, mats, [{ ramp: 'rock' }], palette, { ...opts, shape: sphereH }), 16)).toBe(0);
+  });
 });

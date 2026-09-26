@@ -57,6 +57,13 @@ describe('forge CLI end to end on testdisc', () => {
     expect(png(`${DIR}/anim-strip.png`).width).toBeGreaterThan(0);
   });
 
+  it('shows one object at several sizes', () => {
+    const r = cli('sizes', 'planet', '--sizes', '16,32,48', '--seed', '4', '--bg', '-o', `${DIR}/sizes.png`);
+    expect(r.code).toBe(0);
+    expect(r.out).toContain('lati 16, 32, 48');
+    expect(png(`${DIR}/sizes.png`).width).toBeGreaterThan((16 + 32 + 48) * 2);
+  });
+
   it('produces byte-identical files when a command runs twice', () => {
     const runs: [string, string[]][] = [
       ['render.png', ['render', 'testdisc', '--seed', '9', '--frame', '5', '--light', '100', '--grid']],
@@ -78,7 +85,7 @@ describe('forge CLI end to end on testdisc', () => {
     const golden = cli('golden', 'check');
     expect(golden.err).toBe('');
     expect(golden.code).toBe(0);
-    expect(golden.out).toBe('testdisc: ok');
+    expect(golden.out).toBe('planet: ok\ntestdisc: ok');
   });
 });
 
@@ -103,7 +110,7 @@ describe('forge CLI errors', () => {
     expect(typo.err).toContain('uso: npm run forge -- render <gen>');
     expect(cli('render', 'testdisc', '--size', 'big').err).toContain('--size vuole un intero, ricevuto "big"');
     expect(cli('render', 'testdisc', '--size', '999').err).toContain('la dimensione deve essere un intero tra 16 e 256');
-    expect(cli('render', 'planet').err).toContain('generatore sconosciuto "planet"; registrati: testdisc');
+    expect(cli('render', 'moon').err).toContain('generatore sconosciuto "moon"; registrati: planet, testdisc');
     expect(cli('render', 'testdisc', '-o', 'elsewhere.png').err).toContain("l'uscita deve stare dentro out/");
     expect(cli('params', 'testdisc', '--param', 'noise.octave', '--values', '1').err).toContain('forse intendevi "octaves"?');
     expect(cli('params', 'testdisc', '--param', 'relief', '--values', '0.1,9').err).toContain('ricetta.relief: atteso un numero tra 0 e 0.5, ricevuto 9');
@@ -112,7 +119,7 @@ describe('forge CLI errors', () => {
 
   it('runs as a real process, with the same bytes as in-process', () => {
     const out = execFileSync('node_modules/.bin/tsx', ['forge/cli.ts', 'list'], { encoding: 'utf8' });
-    expect(out).toContain('testdisc@1');
+    expect(out).toContain('planet@1');
     expect(() => execFileSync('node_modules/.bin/tsx', ['forge/cli.ts', 'render'], { stdio: 'pipe' })).toThrow();
     for (const [file, argv] of [
       ['proc.png', ['render', 'testdisc', '--seed', '12', '--size', '40']],

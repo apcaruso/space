@@ -105,4 +105,22 @@ describe('Registry', () => {
     const reg = new Registry([fake(probe(), 3)]);
     expect(reg.run('fake', {}, 99).buffer.data).toEqual(reg.run('fake', {}, 99).buffer.data);
   });
+
+  it('resolves raw input with the requested seed, before validation', () => {
+    const seen: number[] = [];
+    const def = { ...fake(probe(), 3), resolve: (input: unknown, seed: number) => (seen.push(seed), { value: seed % 10, ...(input as object) }) };
+    const reg = new Registry([def]);
+    const r = reg.run('fake', {}, 11);
+    expect(r.recipe).toEqual({ value: 1 });
+    expect(r.attempt).toBeGreaterThan(0);
+    expect(new Set(seen)).toEqual(new Set([11]));
+    expect(reg.run('fake', { value: 4 }, 11).recipe).toEqual({ value: 4 });
+  });
+
+  it('uses the generator default light', () => {
+    const reg = new Registry([{ ...fake(probe()), light: { azimuth: 90, elevation: 0 } }]);
+    const light = reg.options('fake').lightDir;
+    expect(light.x).toBeCloseTo(1, 12);
+    expect(light.z).toBeCloseTo(0, 12);
+  });
 });

@@ -2,8 +2,8 @@
 // (recipe, seed, options), stored in tests/golden/<name>.json.
 
 import { existsSync, readFileSync } from 'node:fs';
-import { fingerprint } from '../core/fingerprint';
-import { DEFAULT_AZIMUTH, DEFAULT_ELEVATION, generatorId, type Descriptor, type Json, type Registry } from '../gen/registry';
+import { fingerprint, fingerprintBytes } from '../core/fingerprint';
+import { defaultLight, generatorId, type Descriptor, type Json, type Registry } from '../gen/registry';
 import { lightFromAngle } from '../toolkit/light';
 
 export const GOLDEN_DIR = 'tests/golden';
@@ -28,15 +28,28 @@ export function goldenPath(name: string): string {
   return `${GOLDEN_DIR}/${name}.json`;
 }
 
+/** Long strings in a descriptor (encoded maps) become their fingerprint, to keep goldens readable. */
+function summarize(value: Json): Json {
+  if (typeof value === 'string') return value.length > 64 ? `fnv:${fingerprintBytes(new TextEncoder().encode(value))} (${value.length} chars)` : value;
+  if (Array.isArray(value)) return value.map(summarize);
+  if (value !== null && typeof value === 'object') {
+    const out: Record<string, Json> = {};
+    for (const k of Object.keys(value)) out[k] = summarize((value as Record<string, Json>)[k]);
+    return out;
+  }
+  return value;
+}
+
 export function computeGolden(registry: Registry, name: string): GoldenFile {
   const def = registry.get(name);
   const cases = def.goldens.map((c) => {
     const size = c.size ?? def.sizes.default;
     const frame = c.frame ?? 0;
-    const light = c.light ?? DEFAULT_AZIMUTH;
+    const light = c.light ?? defaultLight(def).azimuth;
     const recipe = c.recipe ?? {};
-    const r = registry.run(name, recipe, c.seed, { size, frame, lightDir: lightFromAngle(light, DEFAULT_ELEVATION) });
-    return { seed: c.seed, recipe, size, frame, light, seedUsed: r.seedUsed, fingerprint: fingerprint(r.buffer), descriptor: r.descriptor };
+    const r = registry.run(name, recipe, c.seed, { size, frame, lightDir: lightFromAngle(light, defaultLight(def).elevation) });
+    const descriptor = summarize(r.descriptor) as Descriptor;
+    return { seed: c.seed, recipe, size, frame, light, seedUsed: r.seedUsed, fingerprint: fingerprint(r.buffer), descriptor };
   });
   return { id: generatorId(def), cases };
 }
@@ -77,6 +90,6 @@ export function checkGolden(registry: Registry, name: string): string[] {
     }
   });
   if (problems.length === 0) problems.push(`${name}: il file golden differisce nella formattazione; ${hint}`);
-  problems.push(`${name}: l'output è cambiato senza alzare la versione; alza la versione in gen/${name}.ts oppure ${hint}`);
+  problems.push(`${name}: l'output è cambiato senza alzare la versione; alza la versione del generatore ${name} oppure ${hint}`);
   return problems;
 }

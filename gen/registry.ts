@@ -13,7 +13,10 @@ export type Json = null | boolean | number | string | readonly Json[] | { readon
 export type Descriptor = { readonly [key: string]: Json };
 
 export interface GenerateOptions {
-  /** Sprite side in pixels (one zoom step). */
+  /**
+   * Size of the object in pixels at this zoom step (a planet's diameter). The buffer may be
+   * larger (rings, outline, glow); the descriptor says where the object sits in it.
+   */
   size: number;
   /** Integer animation frame (tick). */
   frame: number;
@@ -48,9 +51,17 @@ export interface GeneratorDef<F extends Fields> {
   readonly version: number;
   readonly description: string;
   readonly recipe: ObjectField<F>;
+  /**
+   * Turns the raw recipe input into the one the schema validates, before defaults: presets,
+   * archetypes picked from the seed... Receives the requested seed, never a retry seed, so
+   * retries keep what it chose. Default: the input unchanged.
+   */
+  resolve?(input: unknown, seed: number): unknown;
   readonly sizes: { readonly default: number; readonly min: number; readonly max: number };
   /** Frames in one animation loop, used by `forge anim` by default. */
   readonly loop: number;
+  /** Default light, degrees (see lightFromAngle); default azimuth 315, elevation 40. */
+  readonly light?: { readonly azimuth: number; readonly elevation: number };
   generate(recipe: Infer<ObjectField<F>>, seed: number, opts: GenerateOptions): GenResult;
   readonly validators?: readonly Validator<Infer<ObjectField<F>>>[];
   /** Attempts before giving up, including the first. Default 8. */
@@ -95,6 +106,11 @@ export interface RunResult extends GenResult, Selection {
   readonly opts: GenerateOptions;
 }
 
+/** Default light angles of a generator. */
+export function defaultLight(def: GeneratorDef<Fields>): { azimuth: number; elevation: number } {
+  return { azimuth: def.light?.azimuth ?? DEFAULT_AZIMUTH, elevation: def.light?.elevation ?? DEFAULT_ELEVATION };
+}
+
 export function generatorId(def: GeneratorDef<Fields>): string {
   return `${def.name}@${def.version}`;
 }
@@ -132,9 +148,10 @@ export class Registry {
     return def;
   }
 
-  /** Validated recipe with defaults; throws RecipeError. */
-  recipe(name: string, input: unknown): Recipe {
-    return parseRecipe(this.get(name).recipe, input);
+  /** Validated recipe with defaults, after the generator's resolve step; throws RecipeError. */
+  recipe(name: string, input: unknown, seed = 0): Recipe {
+    const def = this.get(name);
+    return parseRecipe(def.recipe, def.resolve === undefined ? input : def.resolve(input, seed >>> 0));
   }
 
   /** Options with defaults filled in and checked against the generator's limits. */
@@ -146,17 +163,18 @@ export class Registry {
       throw new RangeError(`${def.name}: la dimensione deve essere un intero tra ${def.sizes.min} e ${def.sizes.max}, ricevuto ${size}`);
     }
     if (!Number.isSafeInteger(frame)) throw new RangeError(`${def.name}: il frame deve essere un intero, ricevuto ${frame}`);
-    return { size, frame, lightDir: partial.lightDir ?? DEFAULT_LIGHT };
+    const light = defaultLight(def);
+    return { size, frame, lightDir: partial.lightDir ?? lightFromAngle(light.azimuth, light.elevation) };
   }
 
   /**
    * Chooses the attempt for a (recipe, seed). Validators judge a canonical render (default size,
-   * frame 0, default light), so the choice depends only on recipe and seed: the same object keeps
+   * frame 0, the generator's default light), so the choice depends only on recipe and seed: the same object keeps
    * its identity across zoom steps, frames and lights.
    */
   select(name: string, recipeInput: unknown, seed: number): Selection & { readonly canonical?: GenResult } {
     const def = this.get(name);
-    const recipe = this.recipe(name, recipeInput);
+    const recipe = this.recipe(name, recipeInput, seed);
     const validators = def.validators ?? [];
     const base = { id: generatorId(def), recipe, seed: seed >>> 0 };
     if (validators.length === 0) return { ...base, seedUsed: attemptSeed(seed, 0), attempt: 0, accepted: true, rejections: [] };

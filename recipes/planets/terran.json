@@ -1,0 +1,12 @@
+{
+  "archetype": "terran",
+  "surface": { "kind": "terrain", "scale": 1.8, "octaves": 4, "warp": 0.5 },
+  "levels": { "sea": 0.52, "shallows": 0.05, "high": 0.78 },
+  "ramps": { "liquid": "ocean", "shallows": "coast", "lowland": "vegetation", "highland": "rock", "cap": "ice" },
+  "caps": { "size": 0.14, "heightBias": 0.6 },
+  "relief": 0.08,
+  "clouds": { "coverage": 0.35, "ramp": "cloud", "octaves": 3, "scale": 1.8 },
+  "atmosphere": { "strength": 0.7, "ramp": "coast" },
+  "rings": { "chance": 0.06, "ramp": "ash" },
+  "limits": { "landMin": 0.15, "landMax": 0.9 }
+}

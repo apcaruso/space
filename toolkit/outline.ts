@@ -14,6 +14,11 @@ export interface OutlineOptions {
   inner?: boolean;
   /** Ramps that never produce or receive outline pixels (emissive glow, effects). */
   skip?: readonly string[];
+  /**
+   * Keeps outlines dark: an outline colour lighter than `lightness` (OKLab L) is replaced by
+   * `index`. Bright ramps (clouds, ice) have a light darkest tone that would read as a halo.
+   */
+  ceiling?: { readonly lightness: number; readonly index: number };
 }
 
 // (dx, dy) pairs: the four orthogonal neighbours, then the four diagonal ones.
@@ -37,7 +42,9 @@ export function outline(buf: IndexedBuffer, palette: Palette, opts: OutlineOptio
   const lineOf = new Uint8Array(256);
   for (let i = 1; i < palette.size; i++) {
     const ramp = palette.homeRamp(i);
-    if (ramp !== undefined && skip[ramp.id] === 0) lineOf[i] = palette.darkest(ramp);
+    if (ramp === undefined || skip[ramp.id] === 1) continue;
+    const line = palette.darkest(ramp);
+    lineOf[i] = opts.ceiling !== undefined && palette.lightnessOf(line) > opts.ceiling.lightness ? opts.ceiling.index : line;
   }
 
   for (let y = 0; y < h; y++) {

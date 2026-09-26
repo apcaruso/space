@@ -1,0 +1,12 @@
+{
+  "archetype": "ocean",
+  "surface": { "kind": "terrain", "scale": 2.2, "octaves": 4, "warp": 0.6 },
+  "levels": { "sea": 0.76, "shallows": 0.1, "high": 0.82 },
+  "ramps": { "liquid": "ocean", "shallows": "coast", "lowland": "sand", "highland": "vegetation", "cap": "ice" },
+  "caps": { "size": 0.08, "heightBias": 0.3 },
+  "relief": 0.04,
+  "clouds": { "coverage": 0.22, "ramp": "cloud", "stretch": 3, "octaves": 3, "scale": 1.8 },
+  "atmosphere": { "strength": 0.8, "ramp": "coast" },
+  "rings": { "chance": 0.05, "ramp": "ice" },
+  "limits": { "landMin": 0.02, "landMax": 0.35 }
+}

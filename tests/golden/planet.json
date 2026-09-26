@@ -1,0 +1,391 @@
+{
+  "id": "planet@1",
+  "cases": [
+    {
+      "seed": 0,
+      "recipe": {},
+      "size": 64,
+      "frame": 0,
+      "light": 290,
+      "seedUsed": 0,
+      "fingerprint": "7336d15f",
+      "descriptor": {
+        "archetype": "ocean",
+        "radius": 32,
+        "centre": [
+          33,
+          33
+        ],
+        "land": 0.091,
+        "composition": {
+          "liquid": 0.86,
+          "shallows": 0.049,
+          "lowland": 0.009,
+          "highland": 0.006,
+          "cap": 0.076
+        },
+        "axis": {
+          "roll": -10.8,
+          "lean": -13.2
+        },
+        "rings": null,
+        "surface": {
+          "width": 64,
+          "height": 32,
+          "legend": [
+            "none",
+            "liquid",
+            "shallows",
+            "lowland",
+            "highland",
+            "cap",
+            "crack",
+            "band-dark",
+            "band-mid",
+            "band-light",
+            "storm",
+            "crater-floor",
+            "crater-rim",
+            "cloud"
+          ],
+          "materials": "fnv:08bfe3a0 (2048 chars)",
+          "heights": "fnv:ecd703a6 (2048 chars)"
+        },
+        "features": []
+      }
+    },
+    {
+      "seed": 1,
+      "recipe": {
+        "archetype": "terran"
+      },
+      "size": 64,
+      "frame": 0,
+      "light": 290,
+      "seedUsed": 1,
+      "fingerprint": "f93fdf52",
+      "descriptor": {
+        "archetype": "terran",
+        "radius": 32,
+        "centre": [
+          33,
+          33
+        ],
+        "land": 0.608,
+        "composition": {
+          "liquid": 0.313,
+          "shallows": 0.079,
+          "lowland": 0.337,
+          "highland": 0.086,
+          "cap": 0.186
+        },
+        "axis": {
+          "roll": -3.4,
+          "lean": -3.7
+        },
+        "rings": null,
+        "surface": {
+          "width": 64,
+          "height": 32,
+          "legend": [
+            "none",
+            "liquid",
+            "shallows",
+            "lowland",
+            "highland",
+            "cap",
+            "crack",
+            "band-dark",
+            "band-mid",
+            "band-light",
+            "storm",
+            "crater-floor",
+            "crater-rim",
+            "cloud"
+          ],
+          "materials": "fnv:049b5480 (2048 chars)",
+          "heights": "fnv:d93ae255 (2048 chars)"
+        },
+        "features": []
+      }
+    },
+    {
+      "seed": 2,
+      "recipe": {
+        "archetype": "gas",
+        "rings": {
+          "chance": 1
+        }
+      },
+      "size": 64,
+      "frame": 30,
+      "light": 290,
+      "seedUsed": 2,
+      "fingerprint": "a3e29e1e",
+      "descriptor": {
+        "archetype": "gas",
+        "radius": 32,
+        "centre": [
+          73,
+          73
+        ],
+        "land": 1,
+        "composition": {
+          "band-dark": 0.349,
+          "band-mid": 0.256,
+          "band-light": 0.386,
+          "storm": 0.009
+        },
+        "axis": {
+          "roll": 12,
+          "lean": 19.5
+        },
+        "rings": {
+          "inner": 1.4,
+          "outer": 2.2
+        },
+        "surface": {
+          "width": 64,
+          "height": 32,
+          "legend": [
+            "none",
+            "liquid",
+            "shallows",
+            "lowland",
+            "highland",
+            "cap",
+            "crack",
+            "band-dark",
+            "band-mid",
+            "band-light",
+            "storm",
+            "crater-floor",
+            "crater-rim",
+            "cloud"
+          ],
+          "materials": "fnv:5059863c (2048 chars)",
+          "heights": "fnv:1f4505c5 (2048 chars)"
+        },
+        "features": []
+      }
+    },
+    {
+      "seed": 3,
+      "recipe": {
+        "archetype": "lava"
+      },
+      "size": 64,
+      "frame": 0,
+      "light": 90,
+      "seedUsed": 3,
+      "fingerprint": "9411ae3a",
+      "descriptor": {
+        "archetype": "lava",
+        "radius": 32,
+        "centre": [
+          33,
+          33
+        ],
+        "land": 0.724,
+        "composition": {
+          "liquid": 0.163,
+          "shallows": 0.113,
+          "lowland": 0.613,
+          "highland": 0.045,
+          "crack": 0.067
+        },
+        "axis": {
+          "roll": 0.3,
+          "lean": 14.2
+        },
+        "rings": null,
+        "surface": {
+          "width": 64,
+          "height": 32,
+          "legend": [
+            "none",
+            "liquid",
+            "shallows",
+            "lowland",
+            "highland",
+            "cap",
+            "crack",
+            "band-dark",
+            "band-mid",
+            "band-light",
+            "storm",
+            "crater-floor",
+            "crater-rim",
+            "cloud"
+          ],
+          "materials": "fnv:a1148854 (2048 chars)",
+          "heights": "fnv:ab401c8b (2048 chars)"
+        },
+        "features": []
+      }
+    },
+    {
+      "seed": 4,
+      "recipe": {
+        "archetype": "cratered"
+      },
+      "size": 32,
+      "frame": 0,
+      "light": 290,
+      "seedUsed": 4,
+      "fingerprint": "3e54cc07",
+      "descriptor": {
+        "archetype": "cratered",
+        "radius": 16,
+        "centre": [
+          17,
+          17
+        ],
+        "land": 1,
+        "composition": {
+          "lowland": 0.753,
+          "highland": 0.001,
+          "crater-floor": 0.103,
+          "crater-rim": 0.143
+        },
+        "axis": {
+          "roll": 8.6,
+          "lean": 13
+        },
+        "rings": null,
+        "surface": {
+          "width": 64,
+          "height": 32,
+          "legend": [
+            "none",
+            "liquid",
+            "shallows",
+            "lowland",
+            "highland",
+            "cap",
+            "crack",
+            "band-dark",
+            "band-mid",
+            "band-light",
+            "storm",
+            "crater-floor",
+            "crater-rim",
+            "cloud"
+          ],
+          "materials": "fnv:4e21d4e6 (2048 chars)",
+          "heights": "fnv:dd65802b (2048 chars)"
+        },
+        "features": []
+      }
+    },
+    {
+      "seed": 5,
+      "recipe": {
+        "archetype": "ice"
+      },
+      "size": 16,
+      "frame": 0,
+      "light": 290,
+      "seedUsed": 5,
+      "fingerprint": "9333edbc",
+      "descriptor": {
+        "archetype": "ice",
+        "radius": 8,
+        "centre": [
+          9,
+          9
+        ],
+        "land": 0.889,
+        "composition": {
+          "liquid": 0.111,
+          "lowland": 0.327,
+          "highland": 0.055,
+          "cap": 0.465,
+          "crack": 0.042
+        },
+        "axis": {
+          "roll": 6,
+          "lean": 11.4
+        },
+        "rings": null,
+        "surface": {
+          "width": 64,
+          "height": 32,
+          "legend": [
+            "none",
+            "liquid",
+            "shallows",
+            "lowland",
+            "highland",
+            "cap",
+            "crack",
+            "band-dark",
+            "band-mid",
+            "band-light",
+            "storm",
+            "crater-floor",
+            "crater-rim",
+            "cloud"
+          ],
+          "materials": "fnv:bca52ee4 (2048 chars)",
+          "heights": "fnv:3e67a99b (2048 chars)"
+        },
+        "features": []
+      }
+    },
+    {
+      "seed": 6,
+      "recipe": {
+        "archetype": "toxic"
+      },
+      "size": 128,
+      "frame": 11,
+      "light": 290,
+      "seedUsed": 6,
+      "fingerprint": "38a2dca3",
+      "descriptor": {
+        "archetype": "toxic",
+        "radius": 64,
+        "centre": [
+          65,
+          65
+        ],
+        "land": 0.595,
+        "composition": {
+          "liquid": 0.29,
+          "shallows": 0.116,
+          "lowland": 0.492,
+          "highland": 0.103
+        },
+        "axis": {
+          "roll": -5.3,
+          "lean": 8.1
+        },
+        "rings": null,
+        "surface": {
+          "width": 64,
+          "height": 32,
+          "legend": [
+            "none",
+            "liquid",
+            "shallows",
+            "lowland",
+            "highland",
+            "cap",
+            "crack",
+            "band-dark",
+            "band-mid",
+            "band-light",
+            "storm",
+            "crater-floor",
+            "crater-rim",
+            "cloud"
+          ],
+          "materials": "fnv:45928064 (2048 chars)",
+          "heights": "fnv:f50f4c0c (2048 chars)"
+        },
+        "features": []
+      }
+    }
+  ]
+}

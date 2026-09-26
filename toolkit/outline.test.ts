@@ -56,4 +56,16 @@ describe('inner outline', () => {
     const shared = grid(['....', '.17.', '....']);
     expect(rows(outline(shared, p, { inner: true }))[1]).toBe('1171');
   });
+
+describe('outline ceiling', () => {
+  it('replaces outline colours that are too light', () => {
+    const light = Palette.fromData({
+      colors: [null, '#c0c0c0', '#e0e0e0', '#101010'],
+      ramps: [{ name: 'pale', tones: [1, 2] }],
+    });
+    const sprite = grid(['...', '.2.', '...']);
+    expect(rows(outline(sprite, light))[0]).toBe('.1.');
+    expect(rows(outline(sprite, light, { ceiling: { lightness: 0.5, index: 3 } }))[0]).toBe('.3.');
+  });
+});
 });

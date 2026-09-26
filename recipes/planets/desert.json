@@ -1,0 +1,12 @@
+{
+  "archetype": "desert",
+  "surface": { "kind": "terrain", "scale": 2.4, "octaves": 5, "warp": 0.9 },
+  "levels": { "sea": 0.16, "shallows": 0, "high": 0.64 },
+  "ramps": { "liquid": "ash", "shallows": "ash", "lowland": "sand", "highland": "rock", "cap": "ice" },
+  "caps": { "size": 0.06, "heightBias": 0.1 },
+  "relief": 0.1,
+  "clouds": { "coverage": 0.04, "ramp": "cloud", "stretch": 3, "octaves": 3 },
+  "atmosphere": { "strength": 0.45, "ramp": "sand" },
+  "rings": { "chance": 0.06, "ramp": "rock" },
+  "limits": { "landMin": 0.7, "landMax": 1 }
+}

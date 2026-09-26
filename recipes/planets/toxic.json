@@ -1,0 +1,12 @@
+{
+  "archetype": "toxic",
+  "surface": { "kind": "terrain", "scale": 1.9, "octaves": 4, "warp": 0.8 },
+  "levels": { "sea": 0.46, "shallows": 0.05, "high": 0.72 },
+  "ramps": { "liquid": "aurora", "shallows": "crystal-teal", "lowland": "metal-ancient", "highland": "ash", "cap": "cloud" },
+  "caps": { "size": 0 },
+  "relief": 0.07,
+  "clouds": { "coverage": 0.4, "ramp": "aurora", "stretch": 3.5, "octaves": 3, "scale": 1.6 },
+  "atmosphere": { "strength": 0.9, "ramp": "aurora" },
+  "rings": { "chance": 0.08, "ramp": "metal-ancient" },
+  "limits": { "landMin": 0.2, "landMax": 0.85 }
+}
