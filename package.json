@@ -24,6 +24,7 @@
     "@types/node": "^20.19.43",
     "@types/pngjs": "^6.0.5",
     "eslint": "^10.11.0",
+    "gifenc": "^1.0.3",
     "pngjs": "^7.0.0",
     "tsx": "^4.23.15",
     "typescript": "~6.0.3",

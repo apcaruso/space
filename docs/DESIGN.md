@@ -69,14 +69,31 @@ Queste regole sono imposte da ESLint (`no-restricted-imports` in `eslint.config.
 generate(recipe, seed, opts) -> { buffer, descriptor }
 ```
 
-- `recipe`: parametri JSON del generatore (archetipo, rampe, soglie…).
-- `seed`: intero; ogni sottosistema ne deriva il proprio con `derive(seed, "nome")`.
-- `opts`: ciò che non è identità dell'oggetto: dimensione in pixel (un gradino di zoom), frame o tick, direzione della luce dalla stella, eventuali flag.
-- `buffer`: buffer indicizzato (`width`, `height`, `Uint8Array` di indici di palette). La conversione in RGBA avviene solo alla fine, in `app/` o `forge/`.
-- `descriptor`: dati derivati dalla stessa generazione, serializzabili in JSON: raggio, classificazione, mappa di superficie, punti notevoli.
+- `recipe`: parametri JSON del generatore (archetipo, rampe, soglie…), già validati e completati con i default dallo schema (§3, "Ricette").
+- `seed`: uint32; ogni sottosistema ne deriva il proprio con `derive(seed, "nome")`.
+- `opts`: ciò che non è identità dell'oggetto: `size` (lato in pixel, un gradino di zoom), `frame` (tick intero), `lightDir` (versore verso la stella, coordinate dello schermo).
+- `buffer`: `IndexedBuffer` di indici di palette. La conversione in RGBA avviene solo alla fine, in `app/` o `forge/`.
+- `descriptor`: dati derivati dalla stessa generazione, solo JSON: raggio, classificazione, mappa di superficie, punti notevoli.
 - **Versione**: ogni generatore dichiara un id versionato (`"planet@1"`). Se l'output cambia, si alza la versione o si aggiornano consapevolmente i golden.
 
-**Coerenza tra gradini**: lo stesso oggetto, generato a dimensioni diverse, deve essere riconoscibilmente lo stesso. Identità, classificazione, mappa di superficie logica e punti notevoli (in coordinate normalizzate) dipendono solo da ricetta e seed, non dalla dimensione; la dimensione influenza solo la rasterizzazione.
+Ogni generatore è un oggetto `defineGenerator({ name, version, description, recipe, sizes, loop, generate, validators, maxAttempts, goldens })` in `gen/`, elencato in `gen/index.ts`:
+
+- `recipe`: schema dichiarativo della ricetta;
+- `sizes`: lato minimo, massimo e di default;
+- `loop`: frame di un giro dell'animazione;
+- `validators`: funzioni `check(result, recipe)` che restituiscono un motivo di scarto o `null`;
+- `maxAttempts`: tentativi massimi, default 8;
+- `goldens`: casi fissati (seed, ricetta, lato, frame, luce) per `forge golden`.
+
+**Registro** (`gen/registry.ts`, `registry` in `gen/index.ts`):
+
+- `run(nome, ricetta, seed, opts)` risolve la ricetta, sceglie il tentativo e genera; `runMany` rende più frame, lati o luci dello stesso oggetto validandolo una volta sola; `select` sceglie solo il tentativo.
+- **Ritentativi deterministici**: il tentativo n usa `derive(seed, "retry", n)` (il tentativo 0 usa il seed stesso), finché i validatori passano. Se nessun tentativo passa, si usa il tentativo 0 e il risultato è marcato `accepted: false`.
+- **I validatori giudicano una resa canonica** (lato di default, frame 0, luce di default), quindi la scelta del tentativo dipende solo da ricetta e seed: lo stesso oggetto resta lo stesso a ogni gradino di zoom, frame e luce.
+
+**Ricette** (`gen/schema.ts`, senza dipendenze, usato anche dall'app): campi `num`, `int`, `bool`, `choice`, `obj` con default, intervalli e documentazione. `parseRecipe` completa i default, ordina le chiavi (stessa ricetta, stesso JSON) e in caso di errore lancia `RecipeError` con **tutti** i problemi, uno per riga, ordinati per percorso: `ricetta.noise.octaves: atteso un intero tra 1 e 8, ricevuto 12`, `ricetta.seaLevl: campo sconosciuto (forse intendevi "seaLevel"?)`.
+
+**Coerenza tra gradini**: lo stesso oggetto, generato a dimensioni diverse, deve essere riconoscibilmente lo stesso. Identità, classificazione, mappa di superficie logica e punti notevoli (in coordinate normalizzate) dipendono solo da ricetta e seed, non dalla dimensione; la dimensione influenza solo la rasterizzazione. Il generatore di prova `testdisc` ne è l'esempio: la sua copertura di terra è misurata su punti della sfera, non sui pixel, ed è identica a ogni lato e frame.
 
 ### Pipeline tipica di un generatore
 
@@ -119,7 +136,7 @@ Le regole valgono per tutti i moduli puri. Sono riportate anche in `CLAUDE.md`.
 | ESLint `no-restricted-syntax` | `**`, `**=`, `for...in`. |
 | ESLint `no-restricted-imports` | Pacchetti npm nei moduli puri; dipendenze tra moduli non ammesse. |
 | `tsconfig.pure.json` | Solo `lib: ES2023`, nessun tipo DOM o Node: usarli è un errore di tipo. |
-| Test golden | Stessi byte a parità di input; cambi di output intercettati. Per il core: `tests/golden/core.json` (§5.7); per i generatori dallo step 3. |
+| Test golden | Stessi byte a parità di input; cambi di output intercettati. Core: `tests/golden/core.json` (§5.7); generatori: `tests/golden/<gen>.json`, verificati da `forge golden check` e da `npm test` (§10). |
 
 Le regole valgono anche per i test dei moduli puri, che in più possono importare `vitest` e usare le funzioni di `Math` come riferimento per `core/dmath`.
 
@@ -250,12 +267,12 @@ Le coppie più vicine sono `rock`/`ash` e `basalt`/`metal-dark`, che condividono
 | `color.ts` | Conversioni sRGB ↔ sRGB lineare ↔ OKLab ↔ OKLCH, `clipChroma`, `inGamut`, esadecimale, `labDistance`. Tutte su `core/dmath`. |
 | `palette.ts` | `masterPalette()` (caricata da `style/palette.json` al primo uso), `Palette.fromData(data)` con validazione. Metodi: `ramp(name)`, `index(ramp, tone)` con tono limitato alla rampa, `darkest(ramp)`, `darkestIndices()`, `homeRamp(i)`, `toneOf(i)`, `related(a, b)`, `lightnessOf(i)`, `toRGBA(buf)` (trasparente con alpha 0, indici inesistenti in magenta). |
 | | **Tabelle** (`IndexTable`, 256 voci indice → indice): `swapTable(from, to)` (palette swap, per posizione, scalata se le lunghezze differiscono), `cycleTable(ramp, frame, { period, from, to })` (palette cycling su tick intero), `lightTable(delta)` (sposta ogni indice di `delta` toni lungo la rampa di casa, per schiarire o scurire senza alpha; 0 resta 0 e nulla diventa 0). `applyTable(buf, table)` e `composeTables(a, b)`. |
-| `light.ts` | `direction(x, y, z)`; `lightValue(normale, luce, opts)` → livello continuo; `quantizeLevel(v, opts, soglia, larghezza)`; `lightLevel(...)`. Opzioni: `levels`, `terminator` (n·l sotto cui è ombra, default 0), `ambient` (livello del lato in ombra, default 0), `minLevel` (materiali emissivi). Il lato illuminato divide n·l in bande di uguale ampiezza; il lato in ombra non viene mai sfumato. |
+| `light.ts` | `direction(x, y, z)`; `lightFromAngle(azimut, elevazione)` (gradi; azimut 0 = luce dall'alto, senso orario); `lightValue(normale, luce, opts)` → livello continuo; `quantizeLevel(v, opts, soglia, larghezza)`; `lightLevel(...)`. Opzioni: `levels`, `terminator` (n·l sotto cui è ombra, default 0), `ambient` (livello del lato in ombra, default 0), `minLevel` (materiali emissivi). Il lato illuminato divide n·l in bande di uguale ampiezza; il lato in ombra non viene mai sfumato. |
 | `dither.ts` | `BAYER2`, `BAYER4`, `BAYER8` (costruite per raddoppio ricorsivo), `bayerThreshold(m, x, y)` con coordinate locali dell'oggetto (anche negative), `ditherQuantize(v, soglia, larghezza)`: i confini tra livelli cadono sugli interi, `larghezza` è l'ampiezza della fascia sfumata attorno a ciascun confine (1 = tutta, 0 = bande nette). |
 | `shade.ts` | `shade(altezze, materiali, tabellaMateriali, palette, opts)`: normali con limitatore **minmod** (gli spigoli restano netti), livello di luce, dither **solo dove la luce varia in modo monotono per 2 pixel per lato** (facce piatte e spigoli restano pieni), livello → tono. Il tono più scuro è riservato all'outline (`reserveDarkest`, default sì); i livelli sono al massimo i toni disponibili. Default: 4 livelli, `BAYER4`, fascia 0.3. |
 | `outline.ts` | `outline(buf, palette, { diagonal, inner, skip })`: outline esterno di 1 px, ortogonale di default, con il tono più scuro della rampa del pixel adiacente (vince il più scuro dove si toccano più materiali); `inner` traccia linee interne dove si toccano rampe non imparentate, sul lato più chiaro; `skip` esclude rampe (emissive). Non allarga il buffer: serve un margine trasparente. |
 | `cleanup.ts` | `removeOrphans` (pixel senza vicini dello stesso indice → il valore più comune attorno; da usare sulle mappe dei materiali, non sull'output sfumato), `fillHoles` (buchi trasparenti di 1 px), `fixCorners(buf, lineIndices?)` (linee pixel-perfect: toglie gli angoli a L dei gradini da 1 px, conserva gli angoli veri e i blocchi). |
-| `font.ts` | Font bitmap 3×5: cifre, maiuscole, punteggiatura di base. `drawText(buf, testo, x, y, indice)`, `textWidth(testo)`, `CHARSET`. Minuscole disegnate come maiuscole, caratteri sconosciuti come `?`. Unico elemento grafico definito a mano; un test verifica che ogni glifo sia diverso dagli altri. |
+| `font.ts` | Font bitmap 3×5: cifre, maiuscole, punteggiatura di base e `@`. `drawText(buf, testo, x, y, indice)`, `textWidth(testo)`, `CHARSET`. Minuscole disegnate come maiuscole, caratteri sconosciuti come `?`. Unico elemento grafico definito a mano; un test verifica che ogni glifo sia diverso dagli altri. |
 
 ## 7. Linee guida visive
 
@@ -292,24 +309,29 @@ Le coppie più vicine sono `rock`/`ash` e `basalt`/`metal-dark`, che condividono
 
 ## 10. Forge e workflow
 
-`forge/` è la CLI con cui si guarda il lavoro (`npm run forge -- <comando>`):
+`forge/` è la CLI con cui si guarda il lavoro: `npm run forge -- <comando>`, `help <comando>` per tutte le opzioni.
 
-| Comando | Output |
+| Comando | Cosa fa |
 |---|---|
-| `render <gen>` | Un oggetto in `out/render/` |
-| `sheet <gen>` | Foglio di varianti (64 seed, griglia 8×8) in `out/sheets/` |
-| `anim <gen>` | GIF di rotazione, nuvole e terminatore in `out/anim/` |
-| `view <indirizzo>` | Vista dell'app 480×270 renderizzata senza browser in `out/views/` |
-| `lint` | Controlli automatici su ricette, palette e output |
-| `golden check\|update` | Confronto (o aggiornamento consapevole) con i golden |
+| `render <gen>` | Un oggetto in PNG (`--seed --size --frame --light --elev --recipe --scale --grid --bg -o`); stampa il descrittore |
+| `sheet <gen>` | Griglia di varianti di seed consecutivi (`--count 64 --from --cols 8`) con il seed sotto ogni cella; `12r2` = scelto al tentativo 2, `12!` = nessun tentativo valido |
+| `params <gen>` | Un parametro della ricetta nelle colonne (`--param a.b --values 1,2,3`), i seed nelle righe (`--seeds 0..7`) |
+| `anim <gen>` | GIF in loop (`--frames`, default un giro del generatore, `--fps 24`); `--strip` scrive anche la striscia dei frame in PNG |
+| `lint <gen>` | Esegue i validatori su molti seed (`--count 256`): quanti passano al primo tentativo, quanti dopo i ritentativi, quanti mai, e perché |
+| `golden check\|update [gen]` | Confronta con `tests/golden/<gen>.json`, o lo riscrive consapevolmente |
+| `list` | Generatori con versione, lati, validatori e parametri della ricetta |
+| `swatches` | Foglio della palette e foglio di shading (§6) |
+| `zoom <png>` | Ritaglia e ingrandisce una zona di un PNG qualsiasi |
 
-Allo step 2 esiste solo l'help; i comandi arrivano allo step 3. Fuori dalla CLI:
+- **Uscite sempre in `out/`** (la CLI rifiuta altri percorsi), a scala intera senza interpolazione; `--bg` mette lo sfondo spazio al posto della trasparenza; `--grid` disegna la griglia dei pixel.
+- **Le GIF usano direttamente la palette** (nessuna quantizzazione): indice 0 trasparente, frame cancellati tra uno e l'altro (niente scie). Il ritardo delle GIF è in centesimi di secondo, quindi 24 fps diventano 25.
+- **Golden dei generatori**: per ogni caso fissato in `goldens`, l'impronta dei pixel, il descrittore e il seed accettato, in `tests/golden/<gen>.json` con l'id versionato. `golden check` distingue un cambio di versione (il file è di un'altra versione) da un cambio di output a versione invariata; `npm test` esegue lo stesso controllo.
+- **Stessi byte ovunque**: lo stesso comando produce file identici byte per byte, anche tra processo reale (tsx) e test (Vitest).
+- `runCli` (`forge/run.ts`) esegue una riga di comando nello stesso processo: i test la usano end to end.
 
-- `npm run bench` esegue `forge/bench.ts`, i benchmark del core (§5.4);
-- `npm run palette` rigenera `style/palette.json` (§6.1);
-- `npx tsx forge/step2-preview.ts` (temporaneo, fino allo step 3) scrive `out/step2-palette.png` e `out/step2-shading.png`; `npx tsx forge/crop.ts <png> <x> <y> <w> <h> <scala> <out>` ritaglia e ingrandisce un PNG per guardarlo da vicino. `forge/png.ts` scrive PNG con `pngjs`.
+Fuori dalla CLI: `npm run bench` (benchmark del core, §5.4) e `npm run palette` (rigenera la palette, §6.1).
 
-**Ciclo di lavoro visivo**: modifica il generatore → genera un foglio di varianti → apri il PNG e guardalo davvero → descrivi cosa vedi → correggi → ripeti. La qualità si giudica sulla distribuzione (fogli di 64 seed), non su un seed fortunato.
+**Ciclo di lavoro visivo** (dettagli e comando per ogni verifica in `CLAUDE.md`, "Come guardare il tuo lavoro"): modifica il generatore → foglio di varianti e animazione → apri i PNG e guardali davvero → descrivi cosa vedi → correggi → ripeti. La qualità si giudica sulla distribuzione (fogli di 64 seed), non su un seed fortunato.
 
 **Fine di ogni step**: `npm run check` verde (typecheck, lint, test); fogli di preview aggiornati in `out/`; questo documento aggiornato se sono cambiate decisioni; un commit. Poi ci si ferma e si riassume, senza iniziare lo step successivo.
 
@@ -322,7 +344,7 @@ Allo step 2 esiste solo l'help; i comandi arrivano allo step 3. Fuori dalla CLI:
   - `tsconfig.pure.json`: `core/`, `toolkit/`, `gen/`, `universe/`; solo `lib: ES2023`, nessun tipo DOM o Node;
   - `tsconfig.tools.json`: `forge/` e i file di configurazione; tipi Node;
   - `tsconfig.app.json`: `app/`; DOM e `vite/client`.
-- **Dipendenze esterne solo in `forge/` e `app/`**: `pngjs` in `forge/` dallo step 2, `gifenc` dallo step 3. `app/` non importa nulla da `forge/`.
+- **Dipendenze esterne solo in `forge/` e `app/`**: `pngjs` (dallo step 2) e `gifenc` (dallo step 3) in `forge/`. `app/` non importa nulla da `forge/`.
 
 ## 12. Roadmap
 
@@ -331,7 +353,7 @@ Allo step 2 esiste solo l'help; i comandi arrivano allo step 3. Fuori dalla CLI:
 | 0 | Setup del repo, tooling, lint di determinismo, documenti di riferimento | fatto |
 | 1 | **Core deterministico**: hash e `derive`, `Rng`, `dmath` (trigonometria, `exp`, `log`, `pow`… solo con `+ - * /` e `sqrt`), rumore da hash di reticolo (value, gradient, fbm, domain warp, Worley), buffer indicizzati, impronte e golden del core | fatto |
 | 2 | **Stile, palette e toolkit**: palette master generata a rampe con hue shift; luce quantizzata, dither Bayer, shading, outline selettivo, pulizia, tabelle di swap/cycling/luce, RGBA, font 3×5 | fatto |
-| 3 | **Forge CLI**: render, sheet, anim, lint, golden; `pngjs` e `gifenc` | |
+| 3 | **Forge CLI**: registro dei generatori, schema delle ricette, ritentativi, generatore di prova; render, sheet, params, anim, lint, golden, list, swatches, zoom | fatto |
 | 4 | **Pianeti**: SDF e rasterizzazione in `core/` (rinviate dagli step 1–2); archetipi, mappa di superficie, rotazione, nuvole, terminatore, lune e anelli; descrittore | |
 | 5 | **Stelle, asteroidi e sfondi** | |
 | 6 | **Universo**: galassia, settori, sistemi, orbite, nomi, indirizzi | |
@@ -379,11 +401,20 @@ Formato: data, step, decisione e motivo. Le voci non si cancellano: se una decis
 - **2026-09-26, step 2: pulizia prima dello shading.** `removeOrphans` cancellerebbe il dither sparso, che è fatto di pixel isolati: si usa sulle mappe dei materiali. `fixCorners` toglie solo gli angoli dei gradini da 1 px; gli angoli veri (bracci di almeno 2 px) restano.
 - **2026-09-26, step 2: font come stringhe di bit.** Ogni glifo è scritto come cinque righe di tre bit (`'010 101 111 101 101'`), leggibili e modificabili; M e N sono state ridisegnate dopo averle viste confondersi nella preview.
 - **2026-09-26, step 2: preview temporanee in forge.** `forge/step2-preview.ts` e `forge/crop.ts` servono finché la CLI dello step 3 non le sostituisce; `forge/png.ts` resta.
+- **2026-09-26, step 3: schema delle ricette scritto in casa.** Niente zod: la validazione serve anche all'app e i moduli puri non hanno dipendenze. Lo schema copre ciò che serve (numeri con intervallo, interi, booleani, scelte, oggetti annidati) ed elenca tutti gli errori insieme, ordinati, con suggerimenti per i refusi.
+- **2026-09-26, step 3: registro esplicito.** I generatori sono elencati in `gen/index.ts` invece di registrarsi con un effetto collaterale all'import: niente stato globale nei moduli puri, ordine sempre lo stesso.
+- **2026-09-26, step 3: validazione sulla resa canonica.** Se i validatori guardassero la resa richiesta, un oggetto potrebbe cambiare seed (e aspetto) tra un gradino di zoom e l'altro o tra due frame. Validando sempre lato di default, frame 0 e luce di default, la scelta del tentativo dipende solo da ricetta e seed. Il costo è una resa in più quando le opzioni differiscono; l'app dovrà mettere in cache la scelta.
+- **2026-09-26, step 3: luce come versore, `--light` come azimut.** `opts.lightDir` è un versore; la CLI lo costruisce da azimut (0 = dall'alto, senso orario, default 315) ed elevazione (default 40°) con `lightFromAngle` in `toolkit/light.ts`.
+- **2026-09-26, step 3: golden dei generatori come impronte più descrittori.** Niente PNG di riferimento: i PNG si rigenerano in `out/` quando servono. Il file contiene anche il descrittore e il seed accettato, così un cambio nei validatori o nei dati derivati si vede anche a pixel invariati.
+- **2026-09-26, step 3: GIF con gifenc caricato come CommonJS.** gifenc ha build diverse per Node e per i bundler; `forge/` lo carica sempre con `createRequire`, così tsx e Vitest eseguono lo stesso codice e scrivono gli stessi byte.
+- **2026-09-26, step 3: testi della CLI in italiano.** Riepiloghi, opzioni, messaggi ed errori delle ricette sono in italiano, come stabilito allo step 0; gli errori interni per chi scrive un generatore restano in inglese come il codice.
+- **2026-09-26, step 3: etichette del foglio attive di default.** `sheet` scrive sempre il seed sotto le celle; `--labels` è accettato, `--no-labels` le toglie. Il foglio senza etichette è raramente utile.
+- **2026-09-26, step 3: `swatches` e `zoom` al posto degli script dello step 2.** Il foglio della palette e quello di shading ora si rigenerano con `forge swatches`; `forge zoom` ritaglia e ingrandisce qualsiasi PNG. Il font 3×5 guadagna `@` per gli id dei generatori.
 
 ## 14. Questioni aperte
 
 - **Spazio nella palette**: la palette è piena (63 su 63). Le rampe che serviranno agli step 5–8 (classi spettrali delle stelle, fenomeni) dovranno riusare le rampe esistenti, condividere di più, usare meno toni, oppure alzare il limite di 64 colori. Step 5.
-- **Formato dei golden dei generatori**: solo impronte, come per il core, o anche PNG di riferimento da guardare. Step 3.
+- **Cache nell'app**: la scelta del tentativo (resa canonica) e gli sprite per gradino vanno messi in cache per (generatore@versione, ricetta, seed). Step 7.
 - **Determinismo verificato anche nel browser**: come confrontare gli stessi golden in Node e nel browser. Step 3 o 7.
 - **Descrittore senza rasterizzare**: serve per il pannello e per trovare oggetti rari da lontano senza generare pixel. Step 4 o 6.
 - **Forma dell'universo**: una galassia finita su un piano infinito di settori, o altro? Step 6.
@@ -391,4 +422,4 @@ Formato: data, step, decisione e motivo. Le voci non si cancellano: se una decis
 - **Persistenza del catalogo**: storage del browser, export, entrambi. Step 9.
 - **Prestazioni nel browser**: i tempi del §5.4 sono misurati in Node; vanno verificati nell'app. Step 7.
 
-Risolte (vedi Decisioni): allo step 1 dimensione dei seed, `derive` a più componenti, indice 0 trasparente; allo step 2 palette unica globale, numero di rampe e di toni.
+Risolte (vedi Decisioni): allo step 1 dimensione dei seed, `derive` a più componenti, indice 0 trasparente; allo step 2 palette unica globale, numero di rampe e di toni; allo step 3 formato dei golden dei generatori.

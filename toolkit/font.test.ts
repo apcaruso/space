@@ -11,7 +11,7 @@ function render(text: string): string[] {
 
 describe('font', () => {
   it('covers digits, capitals and basic punctuation', () => {
-    for (const ch of '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ .,:;-+=_/()!?\'#%*<>') expect(CHARSET).toContain(ch);
+    for (const ch of '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ .,:;-+=_/()!?\'#%*<>@') expect(CHARSET).toContain(ch);
   });
 
   it('draws glyphs on a 3x5 grid with one column of spacing', () => {

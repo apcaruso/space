@@ -24,9 +24,33 @@ In più, i moduli puri non hanno dipendenze npm (solo import relativi) e non toc
 
 ## Workflow
 
-- Dopo ogni modifica visiva a un generatore: genera un foglio di varianti (`npm run forge -- sheet <gen>`), apri il PNG in `out/`, guardalo davvero, descrivi cosa vedi, correggi, ripeti.
+- Dopo ogni modifica visiva a un generatore: guarda il risultato come spiegato in "Come guardare il tuo lavoro", correggi, ripeti.
+- Un nuovo generatore si scrive con `defineGenerator` (nome, versione, schema della ricetta, `generate`, validatori, casi golden) e si aggiunge a `gen/index.ts`. I ritentativi li fa il registro, non il generatore.
 - La qualità si giudica sulla distribuzione (fogli di 64 seed), non su un seed fortunato.
 - Ogni step termina con: `npm run check` verde (typecheck, lint, test); fogli di preview aggiornati in `out/`; `docs/DESIGN.md` aggiornato se sono cambiate decisioni (sezione “Decisioni”); un commit. **Poi fermati e riassumi: non iniziare lo step successivo.**
+
+## Come guardare il tuo lavoro
+
+Dopo ogni modifica visiva:
+
+1. `npm run forge -- sheet <gen> --bg -o out/<gen>-sheet.png`: 64 seed con il numero sotto ogni cella.
+2. `npm run forge -- anim <gen> --bg --strip -o out/<gen>-anim.gif`: la GIF e la striscia dei frame.
+3. Apri i PNG con lo strumento di lettura dei file (Read). La GIF non si legge come sequenza: leggi `out/<gen>-anim-strip.png`.
+4. Descrivi cosa vedi (forma, colori, luce, outline, dither, varietà tra i seed, difetti) e solo dopo decidi il passo successivo.
+
+| Verifica | Comando |
+|---|---|
+| Distribuzione, seed brutti | `sheet <gen> --bg` (64 seed); poi `lint <gen> --count 256` per i numeri |
+| Effetto di un parametro | `params <gen> --param a.b --values v1,v2,v3,v4 --seeds 0..7 --bg` |
+| Movimento: rotazione, nuvole, terminatore | `anim <gen> --bg --strip`, poi leggi la striscia |
+| Singoli pixel: outline, dither, angoli | `render <gen> --seed n --scale 8 --grid --bg`, oppure `zoom <png> --x --y --w --h` su un PNG esistente |
+| Luce da un'altra direzione | `--light <gradi>` (0 = dall'alto, senso orario) e `--elev <gradi>` su render, sheet, anim |
+| Aspetto alla scala del gioco | `render <gen> --scale 1 --bg` (nell'app 1 pixel dello sprite = 1 pixel dello schermo) |
+| Palette e rampe | `swatches` (fogli in `out/palette.png` e `out/palette-shading.png`) |
+| L'output è cambiato? | `golden check`; dopo un cambio voluto: alza la versione del generatore e `golden update <gen>` |
+| Generatori e parametri disponibili | `list` |
+
+Usa sempre `--bg` per guardare: su trasparenza le etichette chiare non si leggono. Le immagini grandi vengono rimpicciolite dal lettore: per i dettagli usa `zoom`.
 
 ## Comandi
 
@@ -34,13 +58,12 @@ In più, i moduli puri non hanno dipendenze npm (solo import relativi) e non toc
 |---|---|
 | `npm run check` | typecheck + lint + test |
 | `npm test` | Vitest una volta (`npm run test:watch` in watch) |
-| `npm test -- -u` | Rigenera i golden (`tests/golden/`): solo per cambi di output voluti, annotati in Decisioni |
+| `npm test -- -u` | Rigenera il golden del core (`tests/golden/core.json`): solo per cambi voluti, annotati in Decisioni |
 | `npm run bench` | Benchmark del core in Node (`forge/bench.ts`) |
 | `npm run palette` | Rigenera `style/palette.json` da `style/ramps.json` (mai modificare palette.json a mano) |
-| `npx tsx forge/step2-preview.ts` | Preview di palette e shading in `out/` (temporaneo, fino alla CLI dello step 3) |
 | `npm run lint` | ESLint, comprese le regole di determinismo |
 | `npm run typecheck` | `tsc -b` su tutti i tsconfig |
-| `npm run forge -- <cmd>` | CLI forge (`tsx forge/cli.ts`); senza argomenti stampa l'help |
+| `npm run forge -- <cmd>` | CLI forge: `render`, `sheet`, `params`, `anim`, `lint`, `golden`, `list`, `swatches`, `zoom`; `help <cmd>` per le opzioni |
 | `npm run dev` / `npm run build` | App Vite (root `app/`, build in `dist/`) |
 
 ## Dove sta cosa
@@ -48,15 +71,15 @@ In più, i moduli puri non hanno dipendenze npm (solo import relativi) e non toc
 ```
 core/       hash, derive, Rng, dmath, rumore, buffer, impronte                       (puro)
 toolkit/    colore, palette e tabelle, luce, dither, shade, outline, pulizia, font   (puro)
-gen/        un generatore per sottocartella: planet, star, asteroid, background,
-            phenomena, megastructure, ui                                             (puro)
+gen/        registry, schema delle ricette, index (elenco), testdisc; poi planet, star,
+            asteroid, background, phenomena, megastructure, ui                       (puro)
 universe/   galassia, settori, sistemi, orbite, nomi, indirizzi                      (puro)
 style/      ramps.json (parametri) -> palette.json (generata): 63 colori + trasparente
 recipes/    oggetti speciali con seed fissato (JSON)
-forge/      script Node (palette, bench, preview) e CLI: render, sheet, anim, view, lint, golden
+forge/      CLI (cli.ts, run.ts, commands/), golden dei generatori, script palette e bench
 app/        esploratore nel browser
 docs/       DESIGN.md
-tests/      golden/*.json: impronte attese degli output
+tests/      golden/core.json (core) e golden/<gen>.json (generatori): impronte attese
 out/        preview generate (ignorata da git)
 ```
 

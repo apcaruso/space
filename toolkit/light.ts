@@ -1,6 +1,7 @@
 // Quantised lighting. Screen coordinates: x right, y down, z towards the viewer.
 // A light direction points from the surface towards the light (its star).
 
+import { cos, PI, sin } from '../core/dmath';
 import { ditherQuantize } from './dither';
 
 export interface Vec3 {
@@ -14,6 +15,17 @@ export function direction(x: number, y: number, z: number): Vec3 {
   const len = Math.sqrt(x * x + y * y + z * z);
   if (len === 0) throw new RangeError('direction: zero vector');
   return { x: x / len, y: y / len, z: z / len };
+}
+
+/**
+ * Light direction from a compass azimuth (0 = light from the top of the screen, 90 = from the
+ * right, clockwise) and an elevation above the image plane, both in degrees.
+ */
+export function lightFromAngle(azimuthDeg: number, elevationDeg: number): Vec3 {
+  const a = (azimuthDeg * PI) / 180;
+  const e = (elevationDeg * PI) / 180;
+  const h = cos(e);
+  return direction(sin(a) * h, -cos(a) * h, sin(e));
 }
 
 export interface LevelOptions {

@@ -1,0 +1,107 @@
+{
+  "id": "testdisc@1",
+  "cases": [
+    {
+      "seed": 0,
+      "recipe": {},
+      "size": 48,
+      "frame": 0,
+      "light": 315,
+      "seedUsed": 0,
+      "fingerprint": "fa5c53f3",
+      "descriptor": {
+        "radius": 23,
+        "landCoverage": 0.586,
+        "rotationPeriod": 96
+      }
+    },
+    {
+      "seed": 1,
+      "recipe": {},
+      "size": 48,
+      "frame": 0,
+      "light": 315,
+      "seedUsed": 1,
+      "fingerprint": "f97a8ea6",
+      "descriptor": {
+        "radius": 23,
+        "landCoverage": 0.559,
+        "rotationPeriod": 96
+      }
+    },
+    {
+      "seed": 2,
+      "recipe": {},
+      "size": 48,
+      "frame": 0,
+      "light": 315,
+      "seedUsed": 2,
+      "fingerprint": "297f6fb6",
+      "descriptor": {
+        "radius": 23,
+        "landCoverage": 0.475,
+        "rotationPeriod": 96
+      }
+    },
+    {
+      "seed": 7,
+      "recipe": {},
+      "size": 32,
+      "frame": 0,
+      "light": 315,
+      "seedUsed": 7,
+      "fingerprint": "6747d367",
+      "descriptor": {
+        "radius": 15,
+        "landCoverage": 0.447,
+        "rotationPeriod": 96
+      }
+    },
+    {
+      "seed": 3,
+      "recipe": {},
+      "size": 48,
+      "frame": 24,
+      "light": 315,
+      "seedUsed": 3,
+      "fingerprint": "cedb7bdf",
+      "descriptor": {
+        "radius": 23,
+        "landCoverage": 0.529,
+        "rotationPeriod": 96
+      }
+    },
+    {
+      "seed": 4,
+      "recipe": {},
+      "size": 48,
+      "frame": 0,
+      "light": 90,
+      "seedUsed": 4,
+      "fingerprint": "22cc0ec5",
+      "descriptor": {
+        "radius": 23,
+        "landCoverage": 0.57,
+        "rotationPeriod": 96
+      }
+    },
+    {
+      "seed": 5,
+      "recipe": {
+        "land": "sand",
+        "sea": "magma",
+        "coastline": true
+      },
+      "size": 64,
+      "frame": 0,
+      "light": 315,
+      "seedUsed": 5,
+      "fingerprint": "58f7ba20",
+      "descriptor": {
+        "radius": 31,
+        "landCoverage": 0.48,
+        "rotationPeriod": 96
+      }
+    }
+  ]
+}

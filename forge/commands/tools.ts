@@ -1,22 +1,20 @@
-// Temporary step 2 preview (replaced by the forge CLI at step 3): `npx tsx forge/step2-preview.ts`.
-//   out/step2-palette.png   every ramp with its name, plus the master palette, x8
-//   out/step2-shading.png   a sphere and a bevelled rectangle per ramp, lit from 8 directions, x3
-//   out/step2-shading-1x.png the same at 1x
+// Tool commands: swatches (palette and shading reference sheets) and zoom (close-up of a PNG).
 
-import { FloatField, IndexedBuffer } from '../core/buffer';
-import { cos, PI, sin } from '../core/dmath';
-import { fixCorners } from '../toolkit/cleanup';
-import { drawText, LINE_HEIGHT, textWidth } from '../toolkit/font';
-import { direction } from '../toolkit/light';
-import { outline } from '../toolkit/outline';
-import { masterPalette } from '../toolkit/palette';
-import { shade } from '../toolkit/shade';
-import { writePng } from './png';
+import { readFileSync } from 'node:fs';
+import { PNG } from 'pngjs';
+import { FloatField, IndexedBuffer } from '../../core/buffer';
+import { cos, PI, sin } from '../../core/dmath';
+import { fixCorners } from '../../toolkit/cleanup';
+import { drawText, LINE_HEIGHT, textWidth } from '../../toolkit/font';
+import { direction } from '../../toolkit/light';
+import { outline } from '../../toolkit/outline';
+import { shade } from '../../toolkit/shade';
+import { UsageError } from '../args';
+import { BG, INK, outputPath, palette, positiveInt, savePng, writeOutput, type Command } from '../common';
+import { encodePng } from '../png';
 
-const palette = masterPalette();
-const BG = palette.index('space', 0);
-const INK = palette.index('ui-cool', 3);
 const DIM = palette.index('ui-cool', 1);
+
 const labelW = Math.max(...palette.ramps.map((r) => textWidth(r.name))) + 4;
 
 /** A size x size swatch framed in the darkest colour, so it shows on any background. */
@@ -131,9 +129,61 @@ function shadingSheet(): IndexedBuffer {
   return buf;
 }
 
-const sheet = paletteSheet();
-writePng('out/step2-palette.png', palette.toRGBA(sheet), sheet.w, sheet.h, 8);
-const shading = shadingSheet();
-writePng('out/step2-shading.png', palette.toRGBA(shading), shading.w, shading.h, 3);
-writePng('out/step2-shading-1x.png', palette.toRGBA(shading), shading.w, shading.h, 1);
-console.log(`palette ${sheet.w}x${sheet.h} (x8), shading ${shading.w}x${shading.h} (x3 and x1)`);
+
+export const swatches: Command = {
+  name: 'swatches',
+  usage: 'swatches [--scale n] [-o out/palette.png]',
+  summary: 'foglio della palette (ogni rampa con il nome) e foglio di shading (sfera e smusso per rampa, 8 luci)',
+  options: {
+    scale: { kind: 'int', value: 'n', doc: 'ingrandimento del foglio di shading, default 3 (quello della palette usa 8)' },
+    out: { kind: 'string', value: 'out/file.png', short: 'o', doc: 'percorso del foglio della palette; quello di shading va accanto' },
+  },
+  run(args, io) {
+    if (args.positionals.length > 0) throw new UsageError(`swatches: argomento inatteso "${args.positionals[0]}"`);
+    const palettePath = outputPath(args.values.out, 'palette.png');
+    const shadingPath = palettePath.replace(/\.png$/, '') + '-shading.png';
+    const scale = positiveInt(args.values, 'scale', 3);
+    const sheet = paletteSheet();
+    savePng(palettePath, sheet, 8);
+    const shading = shadingSheet();
+    savePng(shadingPath, shading, scale);
+    io.out(`${palettePath}  ${palette.size - 1} colori, ${palette.ramps.length} rampe  x8`);
+    io.out(`${shadingPath}  ${shading.w}x${shading.h} x${scale}`);
+    return 0;
+  },
+};
+
+export const zoom: Command = {
+  name: 'zoom',
+  usage: 'zoom <file.png> --x n --y n --w n --h n [--scale 8] [-o out/zoom.png]',
+  summary: 'ritaglia una zona di un PNG qualsiasi e la ingrandisce, per guardare i singoli pixel',
+  options: {
+    x: { kind: 'int', value: 'px', doc: 'bordo sinistro della zona' },
+    y: { kind: 'int', value: 'px', doc: 'bordo superiore della zona' },
+    w: { kind: 'int', value: 'px', doc: 'larghezza della zona' },
+    h: { kind: 'int', value: 'px', doc: 'altezza della zona' },
+    scale: { kind: 'int', value: 'n', doc: 'ingrandimento, default 8' },
+    grid: { kind: 'flag', doc: 'disegna la griglia dei pixel' },
+    out: { kind: 'string', value: 'out/file.png', short: 'o', doc: 'file di uscita, dentro out/' },
+  },
+  run(args, io) {
+    const file = args.positionals[0];
+    if (file === undefined) throw new UsageError('zoom: manca il PNG di ingresso');
+    const v = args.values;
+    const png = PNG.sync.read(readFileSync(file));
+    const x0 = typeof v.x === 'number' ? v.x : 0;
+    const y0 = typeof v.y === 'number' ? v.y : 0;
+    const w = positiveInt(v, 'w', png.width - x0);
+    const h = positiveInt(v, 'h', png.height - y0);
+    if (x0 < 0 || y0 < 0 || x0 + w > png.width || y0 + h > png.height) {
+      throw new UsageError(`zoom: la zona ${x0},${y0} ${w}x${h} esce dall'immagine ${png.width}x${png.height}`);
+    }
+    const rgba = new Uint8Array(w * h * 4);
+    for (let y = 0; y < h; y++) rgba.set(png.data.subarray(((y0 + y) * png.width + x0) * 4, ((y0 + y) * png.width + x0 + w) * 4), y * w * 4);
+    const scale = positiveInt(v, 'scale', 8);
+    const path = outputPath(v.out, 'zoom.png');
+    writeOutput(path, encodePng(rgba, w, h, { scale, grid: v.grid === true }));
+    io.out(`${path}  ${file} ${x0},${y0} ${w}x${h} x${scale}`);
+    return 0;
+  },
+};

@@ -67,6 +67,7 @@ const SOURCE: readonly (readonly [string, string])[] = [
   ['*', '000 101 010 101 000'],
   ['<', '001 010 100 010 001'],
   ['>', '100 010 001 010 100'],
+  ['@', '010 101 111 100 011'],
 ];
 
 /** Glyph bitmaps: bit 14 is the top-left pixel, bit 0 the bottom-right. */
