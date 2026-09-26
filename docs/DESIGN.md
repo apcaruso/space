@@ -1,6 +1,6 @@
 # spatialengine: design
 
-Documento di riferimento per tutte le sessioni. Le scelte fatte strada facendo vanno in [Decisioni](#12-decisioni); i dubbi ancora aperti in [Questioni aperte](#13-questioni-aperte).
+Documento di riferimento per tutte le sessioni. Le scelte fatte strada facendo vanno in [Decisioni](#13-decisioni); i dubbi ancora aperti in [Questioni aperte](#14-questioni-aperte).
 
 ## 1. Visione
 
@@ -80,15 +80,14 @@ generate(recipe, seed, opts) -> { buffer, descriptor }
 
 ### Pipeline tipica di un generatore
 
-Ordine indicativo, da confermare allo step 2:
+Confermata allo step 2 (API in §6):
 
-1. **Forma**: SDF e campi di rumore in coordinate normalizzate dell'oggetto (così la stessa forma vale a ogni gradino).
-2. **Materiali**: ogni pixel riceve un materiale, cioè una rampa della palette.
-3. **Luce**: livello quantizzato (3–4 livelli) dalla direzione della stella, con dither Bayer ancorato ai pixel dell'oggetto.
-4. **Colore**: il livello di luce sposta l'indice lungo la rampa del materiale.
-5. **Outline selettivo** con il tono più scuro della rampa del materiale.
-6. **Pulizia**: pixel orfani, scalini irregolari, cluster indesiderati.
-7. **Output indicizzato**; RGBA solo alla fine.
+1. **Forma**: SDF e campi di rumore in coordinate normalizzate dell'oggetto (così la stessa forma vale a ogni gradino). Ne escono un campo di altezze (`FloatField`) e una mappa dei materiali (`IndexedBuffer`: 0 = vuoto, k = materiale k).
+2. **Pulizia dei materiali**: `removeOrphans` e `fillHoles` sulla mappa dei materiali, *prima* dello shading (dopo cancellerebbero il dither).
+3. **Shading** (`shade`): normali dalle altezze, livello di luce quantizzato dalla direzione della stella, dither Bayer ancorato ai pixel dell'oggetto solo sulle sfumature continue, livello → tono della rampa del materiale.
+4. **Outline selettivo** (`outline`) con il tono più scuro della rampa adiacente; opzionale la linea interna tra materiali.
+5. **Linee pixel-perfect** (`fixCorners` sui colori dell'outline).
+6. **Output indicizzato**; effetti per tabella (swap, cycling, luce) e RGBA solo alla fine, in `app/` o `forge/`.
 
 ## 4. Determinismo
 
@@ -164,12 +163,12 @@ Collisioni misurate su una griglia di 1000×1000 settori (coordinate da −500 a
 
 ### 5.3 Matematica deterministica (`core/dmath.ts`)
 
-`sin`, `cos`, `tan`, `atan`, `atan2`, `asin`, `acos`, `exp`, `log`, `pow`, `hypot` e le costanti `PI`, `TAU`, `HALF_PI`, `E`, `LN2`, `LN10`, `SQRT2`, `SQRT1_2`.
+`sin`, `cos`, `tan`, `atan`, `atan2`, `asin`, `acos`, `exp`, `log`, `pow`, `cbrt` (dallo step 2, per OKLab), `hypot` e le costanti `PI`, `TAU`, `HALF_PI`, `E`, `LN2`, `LN10`, `SQRT2`, `SQRT1_2`.
 
 - Solo `+ - * /` e `Math.sqrt`, più operazioni esatte per definizione (`Math.floor`, `Math.round`, `Math.abs`, confronti) e la lettura dei bit di un double con `DataView` (in `log`).
 - Algoritmi di fdlibm: riduzione dell'argomento alla Cody-Waite (π/2 in due parti; `ln 2` in due parti), polinomi minimax sull'intervallo ridotto, tabella esatta delle potenze di 2.
 - Errore massimo misurato contro `Math.*` (assoluto per |risultato| ≤ 1, relativo sopra): circa 1e-16 per `sin`, `cos`, `atan`, `asin`, `exp`, `log`; 4e-16 per `tan`, `acos`, `atan2`; 4e-15 per `pow`. L'obiettivo era 1e-7.
-- `sin`, `cos`, `tan` sono precise per |x| < 1e6; oltre restano deterministiche ma perdono precisione. Le fasi temporali vanno ridotte con il modulo intero prima (§8).
+- `sin`, `cos`, `tan` sono precise per |x| < 1e6; oltre restano deterministiche ma perdono precisione. Le fasi temporali vanno ridotte con il modulo intero prima (§9).
 - `pow` con esponente intero fino a 1024 usa quadrati ripetuti (`pow(2, 10) === 1024`); `atan2(0, 0)` è 0 e il segno dello zero non è distinto.
 
 ### 5.4 Rumore (`core/noise.ts`)
@@ -205,9 +204,60 @@ Collisioni misurate su una griglia di 1000×1000 settori (coordinate da −500 a
 
 ### 5.7 Golden del core
 
-`core/golden.test.ts` confronta con `tests/golden/core.json` le impronte di campi di rumore fissati (64×64: value, gradient, fbm, warp, Worley F1, F2−F1 e id delle celle), di una griglia di `hashCoords`, di percorsi `derive`, di 1024 uscite di `Rng` e di 2560 valori di `dmath`. Se una di queste cambia anche di un bit, il test fallisce. Per un cambio voluto: si rigenera con `npm test -- -u` e si registra il motivo in [Decisioni](#12-decisioni).
+`core/golden.test.ts` confronta con `tests/golden/core.json` le impronte di campi di rumore fissati (64×64: value, gradient, fbm, warp, Worley F1, F2−F1 e id delle celle), di una griglia di `hashCoords`, di percorsi `derive`, di 1024 uscite di `Rng` e di 2560 valori di `dmath`. Se una di queste cambia anche di un bit, il test fallisce. Per un cambio voluto: si rigenera con `npm test -- -u` e si registra il motivo in [Decisioni](#13-decisioni).
 
-## 6. Linee guida visive
+## 6. Palette e toolkit
+
+### 6.1 Regole della palette
+
+- **Una sola palette master** per tutto l'universo: `style/palette.json`, al massimo 63 colori più l'indice 0 **trasparente**. Ogni buffer indicizzato usa questi indici.
+- **Non si modifica a mano.** È generata da `style/ramps.json` con `npm run palette` (`forge/make-palette.ts`); un test (`forge/palette.test.ts`) fallisce se i due file non corrispondono. Per cambiarla: modifica i parametri, rigenera, guarda `out/step2-palette.png` e `out/step2-shading.png`, committa entrambi i JSON. Cambiare la palette cambia l'output di ogni generatore: vanno aggiornati i golden.
+- **Rampe**: sequenze di 4–6 indici dal più scuro al più chiaro. Ogni rampa è generata in **OKLCH** (spazio percettivo):
+  - luminosità da `lightness[0]` a `lightness[1]` lungo una curva (`curve`);
+  - croma massima a metà rampa e ridotta agli estremi (`chromaFalloff`);
+  - **hue shift**: le ombre ruotano verso una tinta fredda (`coolHue`, default 285, blu-viola), le luci verso una calda (`warmHue`, default 90, giallo), al massimo di `hueShift` gradi; ogni rampa può avere i suoi target (`metal-ancient`: ombre verso il verde della patina);
+  - i colori fuori gamut sRGB perdono croma, mai luminosità o tinta.
+- **Colori condivisi.** 23 rampe da 4–6 toni sono 100 toni, che non stanno in 63 colori: il builder unisce i toni vicini di rampe diverse, cominciando dalla coppia più vicina, finché la palette entra. Un'unione è rifiutata se:
+  - unisce due toni della stessa rampa, o rompe l'ordine di luminosità di una rampa (passo minimo `minStep` = 0.05 in L);
+  - sposta un tono di più di `mergeDistance` (0.065 in OKLab; lo spostamento massimo effettivo è 0.042);
+  - ruota la tinta di un tono saturo di più di `maxHueMove` (25°), gli toglie più di `maxChromaLoss` (50%) della croma, o dà una tinta a un grigio;
+  - coinvolge il **tono chiave** di una rampa (quello centrale, indice ⌊n/2⌋): ogni rampa ha almeno un colore tutto suo;
+  - fa condividere a due rampe più di `maxShared` (2) colori.
+- **Conseguenza**: un indice può appartenere a più rampe. Le operazioni che partono da un indice usano la sua **rampa di casa** (la prima che lo elenca); `related(a, b)` dice se due indici compaiono insieme in almeno una rampa, cioè appartengono alla stessa famiglia di materiali.
+
+Rampe attuali (100 toni → 63 colori, 37 toni condivisi):
+
+| Rampa | Toni | Uso |
+|---|---|---|
+| `space` | 4 | sfondo, nebulose scure |
+| `ocean`, `coast` | 5, 4 | acqua profonda, bassi fondali |
+| `vegetation` | 5 | vegetazione |
+| `rock`, `sand`, `basalt`, `ash` | 5, 4, 4, 4 | superfici rocciose, deserti, lava fredda, cenere |
+| `ice`, `cloud` | 4, 4 | ghiaccio, nuvole |
+| `magma` | 5 | lava, superfici incandescenti (emissiva) |
+| `gas-warm`, `gas-cold`, `gas-violet` | 5, 5, 5 | bande dei giganti gassosi |
+| `metal-light`, `metal-dark`, `metal-ancient` | 4, 4, 5 | strutture artificiali; bronzo con patina per le rovine |
+| `energy`, `aurora` | 4, 4 | bagliori, scudi, aurore (emissive) |
+| `crystal-magenta`, `crystal-teal` | 4, 4 | cristalli alieni |
+| `ui-cool`, `ui-warm` | 4, 4 | interfaccia |
+
+Le coppie più vicine sono `rock`/`ash` e `basalt`/`metal-dark`, che condividono i due toni scuri e restano distinte nei toni centrali.
+
+### 6.2 API del toolkit (`toolkit/`)
+
+| Modulo | API |
+|---|---|
+| `color.ts` | Conversioni sRGB ↔ sRGB lineare ↔ OKLab ↔ OKLCH, `clipChroma`, `inGamut`, esadecimale, `labDistance`. Tutte su `core/dmath`. |
+| `palette.ts` | `masterPalette()` (caricata da `style/palette.json` al primo uso), `Palette.fromData(data)` con validazione. Metodi: `ramp(name)`, `index(ramp, tone)` con tono limitato alla rampa, `darkest(ramp)`, `darkestIndices()`, `homeRamp(i)`, `toneOf(i)`, `related(a, b)`, `lightnessOf(i)`, `toRGBA(buf)` (trasparente con alpha 0, indici inesistenti in magenta). |
+| | **Tabelle** (`IndexTable`, 256 voci indice → indice): `swapTable(from, to)` (palette swap, per posizione, scalata se le lunghezze differiscono), `cycleTable(ramp, frame, { period, from, to })` (palette cycling su tick intero), `lightTable(delta)` (sposta ogni indice di `delta` toni lungo la rampa di casa, per schiarire o scurire senza alpha; 0 resta 0 e nulla diventa 0). `applyTable(buf, table)` e `composeTables(a, b)`. |
+| `light.ts` | `direction(x, y, z)`; `lightValue(normale, luce, opts)` → livello continuo; `quantizeLevel(v, opts, soglia, larghezza)`; `lightLevel(...)`. Opzioni: `levels`, `terminator` (n·l sotto cui è ombra, default 0), `ambient` (livello del lato in ombra, default 0), `minLevel` (materiali emissivi). Il lato illuminato divide n·l in bande di uguale ampiezza; il lato in ombra non viene mai sfumato. |
+| `dither.ts` | `BAYER2`, `BAYER4`, `BAYER8` (costruite per raddoppio ricorsivo), `bayerThreshold(m, x, y)` con coordinate locali dell'oggetto (anche negative), `ditherQuantize(v, soglia, larghezza)`: i confini tra livelli cadono sugli interi, `larghezza` è l'ampiezza della fascia sfumata attorno a ciascun confine (1 = tutta, 0 = bande nette). |
+| `shade.ts` | `shade(altezze, materiali, tabellaMateriali, palette, opts)`: normali con limitatore **minmod** (gli spigoli restano netti), livello di luce, dither **solo dove la luce varia in modo monotono per 2 pixel per lato** (facce piatte e spigoli restano pieni), livello → tono. Il tono più scuro è riservato all'outline (`reserveDarkest`, default sì); i livelli sono al massimo i toni disponibili. Default: 4 livelli, `BAYER4`, fascia 0.3. |
+| `outline.ts` | `outline(buf, palette, { diagonal, inner, skip })`: outline esterno di 1 px, ortogonale di default, con il tono più scuro della rampa del pixel adiacente (vince il più scuro dove si toccano più materiali); `inner` traccia linee interne dove si toccano rampe non imparentate, sul lato più chiaro; `skip` esclude rampe (emissive). Non allarga il buffer: serve un margine trasparente. |
+| `cleanup.ts` | `removeOrphans` (pixel senza vicini dello stesso indice → il valore più comune attorno; da usare sulle mappe dei materiali, non sull'output sfumato), `fillHoles` (buchi trasparenti di 1 px), `fixCorners(buf, lineIndices?)` (linee pixel-perfect: toglie gli angoli a L dei gradini da 1 px, conserva gli angoli veri e i blocchi). |
+| `font.ts` | Font bitmap 3×5: cifre, maiuscole, punteggiatura di base. `drawText(buf, testo, x, y, indice)`, `textWidth(testo)`, `CHARSET`. Minuscole disegnate come maiuscole, caratteri sconosciuti come `?`. Unico elemento grafico definito a mano; un test verifica che ogni glifo sia diverso dagli altri. |
+
+## 7. Linee guida visive
 
 - **Risoluzione interna 480×270**, upscale intero. L'upscale è calcolato in pixel del dispositivo (`devicePixelRatio`), così un pixel del gioco è sempre un blocco esatto di pixel dello schermo.
 - **Lo zoom non scala mai i pixel.** Lo zoom della camera è continuo, ma a ogni livello gli oggetti vengono generati alla dimensione giusta, a gradini discreti e con cache. Un pixel dell'oggetto è sempre un pixel dello schermo. Chiave di cache: (generatore@versione, ricetta, seed, gradino, frame, luce).
@@ -216,7 +266,7 @@ Collisioni misurate su una griglia di 1000×1000 settori (coordinate da −500 a
 - **Outline con il tono più scuro della rampa del materiale**, non nero.
 - **Si genera direttamente alla dimensione finale**, mai grande e poi rimpicciolito.
 
-## 7. Universo
+## 8. Universo
 
 - **Gerarchia**: seed di galassia → struttura della galassia (bracci, densità) → settori su griglia intera → sistemi → stelle, pianeti, lune, anelli, fasce di asteroidi → superfici.
 - **Settori**: ogni settore si genera da solo a partire dal seed di galassia e dalle sue coordinate intere, senza dipendere dai vicini né dall'ordine di esplorazione.
@@ -234,13 +284,13 @@ Collisioni misurate su una griglia di 1000×1000 settori (coordinate da −500 a
 - **Indirizzi**: una stringa che identifica esattamente un punto dell'universo (seed di galassia, settore, sistema, percorso del corpo, zoom, tick). Serve per i link e per il catalogo. Formato da definire allo step 6.
 - **Rarità**: i fenomeni rari hanno una distribuzione controllata e devono essere trovabili esplorando. Da progettare allo step 8.
 
-## 8. Tempo
+## 9. Tempo
 
 - Il tempo è un **tick intero**. L'app fa avanzare il tick di un moltiplicatore per frame (pausa = 0).
 - **Lo stato a un tick si calcola direttamente dal tick**, senza simulazione incrementale: posizioni orbitali, rotazioni e nuvole sono funzioni di (seed, tick). Saltare nel tempo costa O(1) e un link con un tick riporta esattamente allo stesso stato.
 - Le fasi si calcolano con il modulo intero prima di passare ai float: `phase = (tick % period) / period`. Così la precisione non degrada con tick grandi (fino a 2^53).
 
-## 9. Forge e workflow
+## 10. Forge e workflow
 
 `forge/` è la CLI con cui si guarda il lavoro (`npm run forge -- <comando>`):
 
@@ -253,13 +303,17 @@ Collisioni misurate su una griglia di 1000×1000 settori (coordinate da −500 a
 | `lint` | Controlli automatici su ricette, palette e output |
 | `golden check\|update` | Confronto (o aggiornamento consapevole) con i golden |
 
-Allo step 1 esiste solo l'help; i comandi arrivano allo step 3. Fuori dalla CLI, `npm run bench` esegue `forge/bench.ts`, i benchmark del core (§5.4).
+Allo step 2 esiste solo l'help; i comandi arrivano allo step 3. Fuori dalla CLI:
+
+- `npm run bench` esegue `forge/bench.ts`, i benchmark del core (§5.4);
+- `npm run palette` rigenera `style/palette.json` (§6.1);
+- `npx tsx forge/step2-preview.ts` (temporaneo, fino allo step 3) scrive `out/step2-palette.png` e `out/step2-shading.png`; `npx tsx forge/crop.ts <png> <x> <y> <w> <h> <scala> <out>` ritaglia e ingrandisce un PNG per guardarlo da vicino. `forge/png.ts` scrive PNG con `pngjs`.
 
 **Ciclo di lavoro visivo**: modifica il generatore → genera un foglio di varianti → apri il PNG e guardalo davvero → descrivi cosa vedi → correggi → ripeti. La qualità si giudica sulla distribuzione (fogli di 64 seed), non su un seed fortunato.
 
 **Fine di ogni step**: `npm run check` verde (typecheck, lint, test); fogli di preview aggiornati in `out/`; questo documento aggiornato se sono cambiate decisioni; un commit. Poi ci si ferma e si riassume, senza iniziare lo step successivo.
 
-## 10. Stack e tooling
+## 11. Stack e tooling
 
 - **TypeScript 6.0 strict**, Node ≥ 20.19, npm, un solo package, ESM.
 - **Vitest 4** per i test (`*.test.ts` accanto al codice), **tsx** per la CLI, **Vite 8** per l'app (`root: app`, build in `dist/`).
@@ -268,24 +322,24 @@ Allo step 1 esiste solo l'help; i comandi arrivano allo step 3. Fuori dalla CLI,
   - `tsconfig.pure.json`: `core/`, `toolkit/`, `gen/`, `universe/`; solo `lib: ES2023`, nessun tipo DOM o Node;
   - `tsconfig.tools.json`: `forge/` e i file di configurazione; tipi Node;
   - `tsconfig.app.json`: `app/`; DOM e `vite/client`.
-- **Dipendenze esterne solo in `forge/` e `app/`** (per esempio `pngjs` e `gifenc` in `forge/`, dallo step 3). `app/` non importa nulla da `forge/`.
+- **Dipendenze esterne solo in `forge/` e `app/`**: `pngjs` in `forge/` dallo step 2, `gifenc` dallo step 3. `app/` non importa nulla da `forge/`.
 
-## 11. Roadmap
+## 12. Roadmap
 
 | Step | Contenuto | Stato |
 |---|---|---|
 | 0 | Setup del repo, tooling, lint di determinismo, documenti di riferimento | fatto |
 | 1 | **Core deterministico**: hash e `derive`, `Rng`, `dmath` (trigonometria, `exp`, `log`, `pow`… solo con `+ - * /` e `sqrt`), rumore da hash di reticolo (value, gradient, fbm, domain warp, Worley), buffer indicizzati, impronte e golden del core | fatto |
-| 2 | **Stile, palette e toolkit**: `style/` a rampe con hue shift; luce quantizzata, dither Bayer, outline selettivo, pulizia, mappatura su palette, RGBA; SDF e rasterizzazione in `core/` (rinviate dallo step 1) | |
+| 2 | **Stile, palette e toolkit**: palette master generata a rampe con hue shift; luce quantizzata, dither Bayer, shading, outline selettivo, pulizia, tabelle di swap/cycling/luce, RGBA, font 3×5 | fatto |
 | 3 | **Forge CLI**: render, sheet, anim, lint, golden; `pngjs` e `gifenc` | |
-| 4 | **Pianeti**: archetipi, mappa di superficie, rotazione, nuvole, terminatore, lune e anelli; descrittore | |
+| 4 | **Pianeti**: SDF e rasterizzazione in `core/` (rinviate dagli step 1–2); archetipi, mappa di superficie, rotazione, nuvole, terminatore, lune e anelli; descrittore | |
 | 5 | **Stelle, asteroidi e sfondi** | |
 | 6 | **Universo**: galassia, settori, sistemi, orbite, nomi, indirizzi | |
 | 7 | **Esploratore**: renderer, zoom continuo a gradini con cache, tempo, interfaccia, pannello informativo; `forge view` | |
 | 8 | **Fenomeni rari e megastrutture**: buchi neri, pulsar, rovine, megastrutture | |
 | 9 | **Catalogo e scoperte**: catalogo personale, link agli indirizzi | |
 
-## 12. Decisioni
+## 13. Decisioni
 
 Formato: data, step, decisione e motivo. Le voci non si cancellano: se una decisione cambia, se ne aggiunge una nuova che la sostituisce.
 
@@ -297,7 +351,7 @@ Formato: data, step, decisione e motivo. Le voci non si cancellano: se una decis
 - **2026-09-26, step 0: dipendenze tra moduli imposte dal lint.** `core` ← `toolkit` ← `gen`, `core` ← `universe`; `universe` non importa da `toolkit` né da `gen`; `app` non importa da `forge`. `gen` può importare da `universe`.
 - **2026-09-26, step 0: `noUncheckedIndexedAccess` disattivato.** I generatori leggono typed array in cicli stretti, e il flag trasformerebbe ogni `buf[i]` in `number | undefined`.
 - **2026-09-26, step 0: test accanto al codice.** `*.test.ts` nello stesso modulo, soggetti alle stesse regole di lint e typecheck del modulo.
-- **2026-09-26, step 0: stato dal tick.** Orbite, rotazioni e nuvole sono funzioni dirette di (seed, tick), senza simulazione incrementale (vedi §8).
+- **2026-09-26, step 0: stato dal tick.** Orbite, rotazioni e nuvole sono funzioni dirette di (seed, tick), senza simulazione incrementale (vedi §9).
 - **2026-09-26, step 1: seed a 32 bit.** Seed e hash sono uint32. Su milioni di oggetti qualche coppia avrà lo stesso seed (e quindi lo stesso aspetto, a parità di ricetta): è accettato, perché l'identità di un oggetto è il suo indirizzo, non il suo seed. Nessun codice deve usare il seed come chiave univoca.
 - **2026-09-26, step 1: `derive` a più componenti.** `derive(seed, ...parts)` con nomi e interi sicuri (anche negativi, a 64 bit), gerarchica e iniettiva tra figli diretti dello stesso genitore (§5.1). I numeri non interi lanciano un errore invece di essere arrotondati in silenzio.
 - **2026-09-26, step 1: `hashCoords` a stadi.** L'hash del reticolo è una catena x → y → z; gli stadi sono esportati così il rumore calcola una volta sola i prefissi comuni agli angoli della cella. Stessi bit di `hashCoords`, fbm 5 ottave da ~46 a ~29 ms su 256×256.
@@ -313,10 +367,22 @@ Formato: data, step, decisione e motivo. Le voci non si cancellano: se una decis
 - **2026-09-26, step 1: `Math.*` ammesso nei test dei moduli puri.** Serve come riferimento per `dmath`; il lint lo permette solo nei `*.test.ts`. `Math.random`, orologio e il resto delle regole restano vietati anche lì.
 - **2026-09-26, step 1: benchmark fuori da Vitest.** `vitest bench` misurava tempi fino a 3 volte più alti di Node sullo stesso codice (87 ms contro 29), e peggiorava proprio dopo un'ottimizzazione che in Node rende il 40% più veloce. La causa probabile, non verificata, è la trasformazione dei moduli di Vitest, che trasforma ogni chiamata a una funzione importata in una lettura di proprietà. `forge/bench.ts` gira con tsx su Node, come il codice reale.
 - **2026-09-26, step 1: SDF e rasterizzazione rinviate.** Non facevano parte della richiesta dello step 1; passano allo step 2, dove servono al toolkit.
+- **2026-09-26, step 2: SDF e rasterizzazione rinviate di nuovo, allo step 4.** Nemmeno la richiesta dello step 2 le comprendeva; le forme della preview (sfera, rettangolo smussato) sono calcolate nello script. Arriveranno con il primo generatore che le usa.
+- **2026-09-26, step 2: palette master unica con colori condivisi.** Le 23 rampe richieste da 4–6 toni sono 100 toni, contro un limite di 63 colori: l'unico modo di rispettare entrambi i vincoli è che le rampe condividano colori, come nelle palette pixel art classiche. Il builder li unisce automaticamente con i vincoli del §6.1, tarati guardando le preview. Senza il tono chiave proprio alcune rampe (`metal-ancient`, `ui-cool`) finivano fatte solo di colori altrui; senza i limiti di tinta e croma `vegetation` prendeva un beige e `gas-warm` una banda grigia.
+- **2026-09-26, step 2: palette generata in OKLCH da parametri.** `style/ramps.json` è la fonte, `style/palette.json` il risultato committato; il builder usa `core/dmath`, quindi rigenera gli stessi byte su ogni macchina. Per OKLab `core/dmath` guadagna `cbrt`.
+- **2026-09-26, step 2: cristalli a 4 toni.** Con tutte le rampe a 5 toni la palette non entrava nei vincoli; i cristalli sono oggetti piccoli e 4 toni bastano.
+- **2026-09-26, step 2: rampa di casa e parentela.** Con i colori condivisi un indice non identifica una sola rampa: le tabelle e l'outline esterno usano la prima rampa che lo elenca; l'outline interno usa `related`, così i colori condivisi non creano false linee dentro un materiale.
+- **2026-09-26, step 2: bande di luce di uguale ampiezza, ombra piena.** Il lato illuminato divide n·l in parti uguali tra i livelli; il lato in ombra è un livello costante (`ambient`) e non viene mai sfumato.
+- **2026-09-26, step 2: dither solo sulle sfumature continue.** Dalle preview: con il dither ovunque le facce piatte vicine a un confine tra livelli prendevano una trama uniforme, e gli spigoli una fila di puntini. Ora le normali usano un limitatore minmod e il dither si applica solo dove la luce è monotona per 2 pixel per lato; la fascia sfumata di default è 0.3 livelli attorno a ogni confine.
+- **2026-09-26, step 2: il tono più scuro è dell'outline.** Di default `shade` usa i toni 1..n-1 per la luce e lascia il tono 0 all'outline, così il bordo si vede anche sul lato in ombra.
+- **2026-09-26, step 2: outline ortogonale e selettivo.** Di default l'outline esterno segue i 4 vicini (angoli più morbidi, diagonali già pixel-perfect); dove si toccano più materiali vince il più scuro; la linea interna va sul lato più chiaro. L'outline non allarga il buffer.
+- **2026-09-26, step 2: pulizia prima dello shading.** `removeOrphans` cancellerebbe il dither sparso, che è fatto di pixel isolati: si usa sulle mappe dei materiali. `fixCorners` toglie solo gli angoli dei gradini da 1 px; gli angoli veri (bracci di almeno 2 px) restano.
+- **2026-09-26, step 2: font come stringhe di bit.** Ogni glifo è scritto come cinque righe di tre bit (`'010 101 111 101 101'`), leggibili e modificabili; M e N sono state ridisegnate dopo averle viste confondersi nella preview.
+- **2026-09-26, step 2: preview temporanee in forge.** `forge/step2-preview.ts` e `forge/crop.ts` servono finché la CLI dello step 3 non le sostituisce; `forge/png.ts` resta.
 
-## 13. Questioni aperte
+## 14. Questioni aperte
 
-- **Palette**: unica globale o per scena; numero di rampe e di toni per rampa; limite di 255 colori più trasparenza. Step 2.
+- **Spazio nella palette**: la palette è piena (63 su 63). Le rampe che serviranno agli step 5–8 (classi spettrali delle stelle, fenomeni) dovranno riusare le rampe esistenti, condividere di più, usare meno toni, oppure alzare il limite di 64 colori. Step 5.
 - **Formato dei golden dei generatori**: solo impronte, come per il core, o anche PNG di riferimento da guardare. Step 3.
 - **Determinismo verificato anche nel browser**: come confrontare gli stessi golden in Node e nel browser. Step 3 o 7.
 - **Descrittore senza rasterizzare**: serve per il pannello e per trovare oggetti rari da lontano senza generare pixel. Step 4 o 6.
@@ -325,4 +391,4 @@ Formato: data, step, decisione e motivo. Le voci non si cancellano: se una decis
 - **Persistenza del catalogo**: storage del browser, export, entrambi. Step 9.
 - **Prestazioni nel browser**: i tempi del §5.4 sono misurati in Node; vanno verificati nell'app. Step 7.
 
-Risolte allo step 1 (vedi Decisioni): dimensione dei seed, `derive` a più componenti, indice 0 trasparente.
+Risolte (vedi Decisioni): allo step 1 dimensione dei seed, `derive` a più componenti, indice 0 trasparente; allo step 2 palette unica globale, numero di rampe e di toni.

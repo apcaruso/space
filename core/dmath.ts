@@ -270,6 +270,15 @@ export function pow(x: number, y: number): number {
   return exp(y * log(x));
 }
 
+/** Cube root, defined for negative x. exp(log(|x|) / 3) refined by one Newton step. */
+export function cbrt(x: number): number {
+  if (x === 0 || x !== x || x === Infinity || x === -Infinity) return x;
+  const a = x < 0 ? -x : x;
+  let y = exp(log(a) / 3);
+  y -= (y * y * y - a) / (3 * y * y);
+  return x < 0 ? -y : y;
+}
+
 /** Length of (x, y), without the overflow protection of Math.hypot. */
 export function hypot(x: number, y: number): number {
   return Math.sqrt(x * x + y * y);

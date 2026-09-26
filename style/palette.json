@@ -1,0 +1,37 @@
+{
+  "colors": [
+    null, "#030112", "#13153f", "#2a284e", "#463c5c", "#0e3677", "#005696", "#1979a7",
+    "#3c97af", "#1f667c", "#58c0be", "#a1e1dd", "#133620", "#00602f", "#3d892a", "#83ab44",
+    "#c2cc7c", "#2b2a31", "#5a443d", "#7d665a", "#969495", "#bfbdba", "#8b5c35", "#a98d59",
+    "#ccb67a", "#f9e2ae", "#71777f", "#7ab3c6", "#acd7e4", "#ecfbfc", "#6a0b3e", "#af2140",
+    "#e8542f", "#ff9e56", "#0c161f", "#3b414b", "#5b6168", "#9f978f", "#b7875f", "#d0b78c",
+    "#16495c", "#4091af", "#724f7e", "#a26f9d", "#cf95b8", "#f9c1de", "#d1dee8", "#b4c2ca",
+    "#485363", "#55501a", "#90693b", "#00afc9", "#2ee4e7", "#008f81", "#86c75d", "#3f196b",
+    "#893aad", "#d56dd7", "#33c4a9", "#aff8d0", "#63aebc", "#c7f9ff", "#492200", "#d2983e"
+  ],
+  "ramps": [
+    { "name": "space", "tones": [1, 2, 3, 4] },
+    { "name": "ocean", "tones": [2, 5, 6, 7, 8] },
+    { "name": "coast", "tones": [9, 8, 10, 11] },
+    { "name": "vegetation", "tones": [12, 13, 14, 15, 16] },
+    { "name": "rock", "tones": [17, 18, 19, 20, 21] },
+    { "name": "sand", "tones": [22, 23, 24, 25] },
+    { "name": "ice", "tones": [26, 27, 28, 29] },
+    { "name": "magma", "tones": [30, 31, 32, 33, 25] },
+    { "name": "basalt", "tones": [34, 17, 35, 36] },
+    { "name": "ash", "tones": [18, 26, 37, 21] },
+    { "name": "gas-warm", "tones": [18, 22, 38, 39, 25] },
+    { "name": "gas-cold", "tones": [40, 9, 41, 27, 11] },
+    { "name": "gas-violet", "tones": [4, 42, 43, 44, 45] },
+    { "name": "cloud", "tones": [20, 21, 46, 29] },
+    { "name": "metal-light", "tones": [36, 20, 47, 29] },
+    { "name": "metal-dark", "tones": [34, 17, 48, 26] },
+    { "name": "metal-ancient", "tones": [12, 49, 50, 23, 39] },
+    { "name": "energy", "tones": [7, 51, 52, 29] },
+    { "name": "aurora", "tones": [9, 53, 54, 25] },
+    { "name": "crystal-magenta", "tones": [55, 56, 57, 45] },
+    { "name": "crystal-teal", "tones": [40, 53, 58, 59] },
+    { "name": "ui-cool", "tones": [34, 9, 60, 61] },
+    { "name": "ui-warm", "tones": [62, 22, 63, 25] }
+  ]
+}

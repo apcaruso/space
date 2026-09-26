@@ -20,7 +20,7 @@ Valgono in `core/`, `toolkit/`, `gen/`, `universe/` (moduli puri), test compresi
 8. Ogni generatore ha una versione (`"planet@1"`): un cambio di output richiede di alzarla o di aggiornare consapevolmente i golden.
 9. Si itera solo su array o chiavi ordinate.
 
-In più, i moduli puri non hanno dipendenze npm (solo import relativi) e non toccano DOM, Node, timer o I/O. I loro test possono importare `vitest` e usare `Math.*` come riferimento per `dmath`. `derive` e la costruzione di `Rng`, `Fbm`, `Warp` stanno fuori dai cicli sui pixel. API del core: `docs/DESIGN.md` §5.
+In più, i moduli puri non hanno dipendenze npm (solo import relativi) e non toccano DOM, Node, timer o I/O. I loro test possono importare `vitest` e usare `Math.*` come riferimento per `dmath`. `derive` e la costruzione di `Rng`, `Fbm`, `Warp` stanno fuori dai cicli sui pixel. API del core: `docs/DESIGN.md` §5; palette e toolkit: §6.
 
 ## Workflow
 
@@ -36,6 +36,8 @@ In più, i moduli puri non hanno dipendenze npm (solo import relativi) e non toc
 | `npm test` | Vitest una volta (`npm run test:watch` in watch) |
 | `npm test -- -u` | Rigenera i golden (`tests/golden/`): solo per cambi di output voluti, annotati in Decisioni |
 | `npm run bench` | Benchmark del core in Node (`forge/bench.ts`) |
+| `npm run palette` | Rigenera `style/palette.json` da `style/ramps.json` (mai modificare palette.json a mano) |
+| `npx tsx forge/step2-preview.ts` | Preview di palette e shading in `out/` (temporaneo, fino alla CLI dello step 3) |
 | `npm run lint` | ESLint, comprese le regole di determinismo |
 | `npm run typecheck` | `tsc -b` su tutti i tsconfig |
 | `npm run forge -- <cmd>` | CLI forge (`tsx forge/cli.ts`); senza argomenti stampa l'help |
@@ -45,13 +47,13 @@ In più, i moduli puri non hanno dipendenze npm (solo import relativi) e non toc
 
 ```
 core/       hash, derive, Rng, dmath, rumore, buffer, impronte                       (puro)
-toolkit/    luce quantizzata, dither Bayer, outline, pulizia, palette, RGBA          (puro)
+toolkit/    colore, palette e tabelle, luce, dither, shade, outline, pulizia, font   (puro)
 gen/        un generatore per sottocartella: planet, star, asteroid, background,
             phenomena, megastructure, ui                                             (puro)
 universe/   galassia, settori, sistemi, orbite, nomi, indirizzi                      (puro)
-style/      palette globale a rampe (JSON)
+style/      ramps.json (parametri) -> palette.json (generata): 63 colori + trasparente
 recipes/    oggetti speciali con seed fissato (JSON)
-forge/      CLI Node: render, sheet, anim, view, lint, golden; bench.ts
+forge/      script Node (palette, bench, preview) e CLI: render, sheet, anim, view, lint, golden
 app/        esploratore nel browser
 docs/       DESIGN.md
 tests/      golden/*.json: impronte attese degli output

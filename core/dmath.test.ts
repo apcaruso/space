@@ -84,6 +84,15 @@ describe('dmath accuracy against Math', () => {
     expect(maxError(d.log, Math.log, (r) => 1 + r.range(-1e-3, 1e-3), 17)).toBeLessThan(TARGET);
   });
 
+  it('cbrt', () => {
+    expect(maxError(d.cbrt, Math.cbrt, (r) => r.range(-10, 10), 19)).toBeLessThan(TARGET);
+    expect(maxError(d.cbrt, Math.cbrt, (r) => Math.exp(r.range(-700, 700)), 20)).toBeLessThan(TARGET);
+    expect(maxError(d.cbrt, Math.cbrt, (r) => -Math.exp(r.range(-700, 700)), 21)).toBeLessThan(TARGET);
+    expect(d.cbrt(27)).toBe(3);
+    expect(d.cbrt(-8)).toBe(-2);
+    expect(d.cbrt(0)).toBe(0);
+  });
+
   it('pow', () => {
     const r = new Rng(18);
     let worst = 0;
