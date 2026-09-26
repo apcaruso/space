@@ -24,19 +24,22 @@ const IMPURE_GLOBALS = [
   'setTimeout', 'setInterval', 'setImmediate', 'requestAnimationFrame', 'queueMicrotask',
 ];
 
+const NO_RANDOM = { object: 'Math', property: 'random', message: 'Regola 2: niente Math.random, usa un seed derivato con derive(seed, "nome").' };
+const NO_LOCALE = LOCALE_DEPENDENT.map((property) => ({
+  property,
+  message: `${property} dipende dalla locale dell'ambiente.`,
+}));
+
 const determinismRules = {
   'no-restricted-properties': [
     'error',
-    { object: 'Math', property: 'random', message: 'Regola 2: niente Math.random, usa un seed derivato con derive(seed, "nome").' },
+    NO_RANDOM,
     ...NON_PORTABLE_MATH.map((property) => ({
       object: 'Math',
       property,
       message: `Regola 5: Math.${property} non è bit-identico tra motori JS, usa core/dmath.`,
     })),
-    ...LOCALE_DEPENDENT.map((property) => ({
-      property,
-      message: `${property} dipende dalla locale dell'ambiente.`,
-    })),
+    ...NO_LOCALE,
   ],
   'no-restricted-globals': [
     'error',
@@ -98,10 +101,14 @@ export default defineConfig(
     ignores: [tests(layer)],
     rules: importRule(layer, { packages: false }),
   })),
-  // Tests in pure modules may import vitest, but keep the determinism and layering rules.
+  // Tests in pure modules may import vitest and use Math.* as a reference for core/dmath;
+  // every other determinism and layering rule still applies.
   ...PURE.map((layer) => ({
     files: [tests(layer)],
-    rules: importRule(layer, { packages: true }),
+    rules: {
+      ...importRule(layer, { packages: true }),
+      'no-restricted-properties': ['error', NO_RANDOM, ...NO_LOCALE],
+    },
   })),
   {
     files: [ts('app')],

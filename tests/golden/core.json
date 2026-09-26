@@ -1,0 +1,19 @@
+{
+  "dmath": "534a51e5",
+  "hash.coords": "33cb6224",
+  "hash.derive": "17e1098a",
+  "noise.fbm2": "ca8becaf",
+  "noise.fbm3": "0ff218b2",
+  "noise.fbm3.value": "ca681708",
+  "noise.gradient2": "034db980",
+  "noise.gradient3": "d283673f",
+  "noise.value2": "e204a1ef",
+  "noise.value3": "6dcf82bd",
+  "noise.warp3": "0f037a3c",
+  "noise.worley2.cell": "2bf11ae7",
+  "noise.worley2.f1": "2ebbe278",
+  "noise.worley2.f2-f1": "2972145a",
+  "noise.worley3.f1": "0833b81d",
+  "noise.worley3.f2-f1": "8d5502f7",
+  "rng.next": "e5e64e22"
+}

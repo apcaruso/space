@@ -15,7 +15,8 @@
     "check": "npm run typecheck && npm run lint && npm run test",
     "forge": "tsx forge/cli.ts",
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "bench": "tsx forge/bench.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

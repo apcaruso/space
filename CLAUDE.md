@@ -20,7 +20,7 @@ Valgono in `core/`, `toolkit/`, `gen/`, `universe/` (moduli puri), test compresi
 8. Ogni generatore ha una versione (`"planet@1"`): un cambio di output richiede di alzarla o di aggiornare consapevolmente i golden.
 9. Si itera solo su array o chiavi ordinate.
 
-In più, i moduli puri non hanno dipendenze npm (solo import relativi; i test possono importare `vitest`) e non toccano DOM, Node, timer o I/O.
+In più, i moduli puri non hanno dipendenze npm (solo import relativi) e non toccano DOM, Node, timer o I/O. I loro test possono importare `vitest` e usare `Math.*` come riferimento per `dmath`. `derive` e la costruzione di `Rng`, `Fbm`, `Warp` stanno fuori dai cicli sui pixel. API del core: `docs/DESIGN.md` §5.
 
 ## Workflow
 
@@ -34,6 +34,8 @@ In più, i moduli puri non hanno dipendenze npm (solo import relativi; i test po
 |---|---|
 | `npm run check` | typecheck + lint + test |
 | `npm test` | Vitest una volta (`npm run test:watch` in watch) |
+| `npm test -- -u` | Rigenera i golden (`tests/golden/`): solo per cambi di output voluti, annotati in Decisioni |
+| `npm run bench` | Benchmark del core in Node (`forge/bench.ts`) |
 | `npm run lint` | ESLint, comprese le regole di determinismo |
 | `npm run typecheck` | `tsc -b` su tutti i tsconfig |
 | `npm run forge -- <cmd>` | CLI forge (`tsx forge/cli.ts`); senza argomenti stampa l'help |
@@ -42,16 +44,17 @@ In più, i moduli puri non hanno dipendenze npm (solo import relativi; i test po
 ## Dove sta cosa
 
 ```
-core/       hash, derive, dmath, rumore, SDF, rasterizzazione, buffer indicizzati   (puro)
+core/       hash, derive, Rng, dmath, rumore, buffer, impronte                       (puro)
 toolkit/    luce quantizzata, dither Bayer, outline, pulizia, palette, RGBA          (puro)
 gen/        un generatore per sottocartella: planet, star, asteroid, background,
             phenomena, megastructure, ui                                             (puro)
 universe/   galassia, settori, sistemi, orbite, nomi, indirizzi                      (puro)
 style/      palette globale a rampe (JSON)
 recipes/    oggetti speciali con seed fissato (JSON)
-forge/      CLI Node: render, sheet, anim, view, lint, golden
+forge/      CLI Node: render, sheet, anim, view, lint, golden; bench.ts
 app/        esploratore nel browser
 docs/       DESIGN.md
+tests/      golden/*.json: impronte attese degli output
 out/        preview generate (ignorata da git)
 ```
 
