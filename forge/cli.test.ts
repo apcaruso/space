@@ -64,6 +64,21 @@ describe('forge CLI end to end on testdisc', () => {
     expect(png(`${DIR}/sizes.png`).width).toBeGreaterThan((16 + 32 + 48) * 2);
   });
 
+  it('glues background chunks and composes scenes', () => {
+    const c = cli('chunks', 'background', '--x', '0..1', '--y', '0', '--size', '64', '-o', `${DIR}/chunks.png`);
+    expect(c.code).toBe(0);
+    expect([png(`${DIR}/chunks.png`).width, png(`${DIR}/chunks.png`).height]).toEqual([128, 64]);
+    expect(cli('chunks', 'planet').err).toContain('non ha chunk.x e chunk.y');
+    const s = cli('scene', 'recipes/scenes/step5.json', '--scale', '1', '-o', `${DIR}/scene.png`);
+    expect(s.code).toBe(0);
+    expect([png(`${DIR}/scene.png`).width, png(`${DIR}/scene.png`).height]).toEqual([480, 270]);
+    writeFileSync(`${DIR}/bad-scene.json`, JSON.stringify({ width: 10, objects: [{ gen: 'star', x: 1.5 }] }));
+    const bad = cli('scene', `${DIR}/bad-scene.json`);
+    expect(bad.code).toBe(1);
+    expect(bad.err).toContain('width e height devono essere interi positivi');
+    expect(bad.err).toContain('objects[0].x: atteso un intero');
+  });
+
   it('produces byte-identical files when a command runs twice', () => {
     const runs: [string, string[]][] = [
       ['render.png', ['render', 'testdisc', '--seed', '9', '--frame', '5', '--light', '100', '--grid']],
@@ -85,7 +100,7 @@ describe('forge CLI end to end on testdisc', () => {
     const golden = cli('golden', 'check');
     expect(golden.err).toBe('');
     expect(golden.code).toBe(0);
-    expect(golden.out).toBe('planet: ok\ntestdisc: ok');
+    expect(golden.out).toBe('asteroid: ok\nbackground: ok\nplanet: ok\nstar: ok\ntestdisc: ok');
   });
 });
 
@@ -110,7 +125,7 @@ describe('forge CLI errors', () => {
     expect(typo.err).toContain('uso: npm run forge -- render <gen>');
     expect(cli('render', 'testdisc', '--size', 'big').err).toContain('--size vuole un intero, ricevuto "big"');
     expect(cli('render', 'testdisc', '--size', '999').err).toContain('la dimensione deve essere un intero tra 16 e 256');
-    expect(cli('render', 'moon').err).toContain('generatore sconosciuto "moon"; registrati: planet, testdisc');
+    expect(cli('render', 'moon').err).toContain('generatore sconosciuto "moon"; registrati: asteroid, background, planet, star, testdisc');
     expect(cli('render', 'testdisc', '-o', 'elsewhere.png').err).toContain("l'uscita deve stare dentro out/");
     expect(cli('params', 'testdisc', '--param', 'noise.octave', '--values', '1').err).toContain('forse intendevi "octaves"?');
     expect(cli('params', 'testdisc', '--param', 'relief', '--values', '0.1,9').err).toContain('ricetta.relief: atteso un numero tra 0 e 0.5, ricevuto 9');

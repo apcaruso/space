@@ -1,0 +1,161 @@
+{
+  "id": "background@1",
+  "cases": [
+    {
+      "seed": 0,
+      "recipe": {},
+      "size": 256,
+      "frame": 0,
+      "light": 315,
+      "seedUsed": 0,
+      "fingerprint": "fac88735",
+      "descriptor": {
+        "chunk": [
+          0,
+          0
+        ],
+        "layer": "all",
+        "origin": [
+          0,
+          0
+        ],
+        "nebula": 0.273,
+        "galaxies": [],
+        "farStars": 407,
+        "midStars": 82,
+        "nearStars": 13
+      }
+    },
+    {
+      "seed": 0,
+      "recipe": {
+        "chunk": {
+          "x": 1,
+          "y": 0
+        }
+      },
+      "size": 256,
+      "frame": 0,
+      "light": 315,
+      "seedUsed": 0,
+      "fingerprint": "7c8afdf6",
+      "descriptor": {
+        "chunk": [
+          1,
+          0
+        ],
+        "layer": "all",
+        "origin": [
+          256,
+          0
+        ],
+        "nebula": 0.242,
+        "galaxies": [
+          {
+            "x": 363,
+            "y": 64,
+            "size": 9.6,
+            "kind": "spiral"
+          },
+          {
+            "x": 294,
+            "y": 207,
+            "size": 5.6,
+            "kind": "elliptical"
+          }
+        ],
+        "farStars": 403,
+        "midStars": 61,
+        "nearStars": 11
+      }
+    },
+    {
+      "seed": 1,
+      "recipe": {
+        "layer": "nebula",
+        "chunk": {
+          "x": -3,
+          "y": 7
+        },
+        "region": {
+          "nebula": 1,
+          "nebulaRamp": "crystal-teal"
+        }
+      },
+      "size": 256,
+      "frame": 0,
+      "light": 315,
+      "seedUsed": 1,
+      "fingerprint": "c381fc35",
+      "descriptor": {
+        "chunk": [
+          -3,
+          7
+        ],
+        "layer": "nebula",
+        "origin": [
+          -768,
+          1792
+        ],
+        "nebula": 0.566
+      }
+    },
+    {
+      "seed": 2,
+      "recipe": {
+        "layer": "near",
+        "chunk": {
+          "x": 5,
+          "y": -2
+        },
+        "region": {
+          "stars": 2
+        }
+      },
+      "size": 256,
+      "frame": 13,
+      "light": 315,
+      "seedUsed": 2,
+      "fingerprint": "1a93e705",
+      "descriptor": {
+        "chunk": [
+          5,
+          -2
+        ],
+        "layer": "near",
+        "origin": [
+          1280,
+          -512
+        ],
+        "nearStars": 19
+      }
+    },
+    {
+      "seed": 3,
+      "recipe": {
+        "layer": "far",
+        "region": {
+          "galaxies": 3
+        }
+      },
+      "size": 128,
+      "frame": 0,
+      "light": 315,
+      "seedUsed": 3,
+      "fingerprint": "20f104ff",
+      "descriptor": {
+        "chunk": [
+          0,
+          0
+        ],
+        "layer": "far",
+        "origin": [
+          0,
+          0
+        ],
+        "galaxies": [],
+        "farStars": 90
+      }
+    }
+  ]
+}

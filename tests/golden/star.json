@@ -1,0 +1,147 @@
+{
+  "id": "star@1",
+  "cases": [
+    {
+      "seed": 0,
+      "recipe": {},
+      "size": 32,
+      "frame": 0,
+      "light": 315,
+      "seedUsed": 0,
+      "fingerprint": "50dcbe79",
+      "descriptor": {
+        "class": "M",
+        "label": "M0 V",
+        "temperature": 3700,
+        "luminosity": 0.08,
+        "intensity": 0.365,
+        "radius": 11.5,
+        "haloRadius": 17.8,
+        "centre": [
+          24.5,
+          24.5
+        ]
+      }
+    },
+    {
+      "seed": 1,
+      "recipe": {
+        "class": "O"
+      },
+      "size": 32,
+      "frame": 7,
+      "light": 315,
+      "seedUsed": 1,
+      "fingerprint": "d7efac33",
+      "descriptor": {
+        "class": "O",
+        "label": "O6 V",
+        "temperature": 36667,
+        "luminosity": 76600,
+        "intensity": 0.924,
+        "radius": 24,
+        "haloRadius": 62.4,
+        "centre": [
+          78,
+          78
+        ]
+      }
+    },
+    {
+      "seed": 2,
+      "recipe": {
+        "class": "M"
+      },
+      "size": 16,
+      "frame": 0,
+      "light": 315,
+      "seedUsed": 2,
+      "fingerprint": "fffd9ee5",
+      "descriptor": {
+        "class": "M",
+        "label": "M8 V",
+        "temperature": 2544,
+        "luminosity": 0.00163,
+        "intensity": 0.207,
+        "radius": 6,
+        "haloRadius": 9.3,
+        "centre": [
+          14,
+          14
+        ]
+      }
+    },
+    {
+      "seed": 3,
+      "recipe": {
+        "class": "red-giant"
+      },
+      "size": 64,
+      "frame": 30,
+      "light": 315,
+      "seedUsed": 3,
+      "fingerprint": "e596bf99",
+      "descriptor": {
+        "class": "red-giant",
+        "label": "M6 III",
+        "temperature": 3500,
+        "luminosity": 311,
+        "intensity": 0.7,
+        "radius": 70.5,
+        "haloRadius": 95.2,
+        "centre": [
+          117.5,
+          117.5
+        ]
+      }
+    },
+    {
+      "seed": 4,
+      "recipe": {
+        "class": "neutron"
+      },
+      "size": 32,
+      "frame": 0,
+      "light": 315,
+      "seedUsed": 4,
+      "fingerprint": "23746305",
+      "descriptor": {
+        "class": "neutron",
+        "label": "NS",
+        "temperature": 833333,
+        "luminosity": 0.000215,
+        "intensity": 0.125,
+        "radius": 3.5,
+        "haloRadius": 17.5,
+        "centre": [
+          23.5,
+          23.5
+        ]
+      }
+    },
+    {
+      "seed": 5,
+      "recipe": {
+        "class": "G"
+      },
+      "size": 128,
+      "frame": 50,
+      "light": 315,
+      "seedUsed": 5,
+      "fingerprint": "8298b70d",
+      "descriptor": {
+        "class": "G",
+        "label": "G8 V",
+        "temperature": 5289,
+        "luminosity": 0.664,
+        "intensity": 0.451,
+        "radius": 64,
+        "haloRadius": 112,
+        "centre": [
+          138,
+          138
+        ]
+      }
+    }
+  ]
+}

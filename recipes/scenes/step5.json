@@ -1,0 +1,17 @@
+{
+  "width": 480,
+  "height": 270,
+  "background": { "seed": 7, "offset": [96, 40], "recipe": { "layer": "all", "region": { "nebula": 0.45 } } },
+  "sun": { "x": 62, "y": 150, "elevation": 15 },
+  "objects": [
+    { "gen": "star", "seed": 5, "size": 40, "x": 62, "y": 150, "recipe": { "class": "G" } },
+    { "gen": "planet", "seed": 3, "size": 56, "x": 236, "y": 92, "recipe": { "archetype": "terran", "rings": { "chance": 0 } } },
+    { "gen": "planet", "seed": 2, "size": 64, "x": 392, "y": 176, "recipe": { "archetype": "gas", "rings": { "chance": 1 } } },
+    { "gen": "planet", "seed": 11, "size": 18, "x": 286, "y": 70, "recipe": { "archetype": "cratered" } },
+    { "gen": "asteroid", "seed": 1, "size": 14, "x": 150, "y": 196 },
+    { "gen": "asteroid", "seed": 2, "size": 10, "x": 172, "y": 214 },
+    { "gen": "asteroid", "seed": 3, "size": 18, "x": 198, "y": 188, "recipe": { "material": "metallic" } },
+    { "gen": "asteroid", "seed": 4, "size": 8, "x": 132, "y": 222, "recipe": { "material": "icy" } },
+    { "gen": "asteroid", "seed": 5, "size": 12, "x": 224, "y": 226, "recipe": { "material": "crystalline" } }
+  ]
+}

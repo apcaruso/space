@@ -334,6 +334,61 @@ Le ottave in meno non cambiano la normalizzazione (si somma un prefisso della st
 - Vicino al bordo il campionamento al più vicino comprime molte celle in un pixel e lascia qualche scalino.
 - Asse e anelli si decidono dal seed del tentativo accettato: un ritentativo può cambiarli (l'archetipo invece resta).
 
+### 7.2 Stelle (`gen/star/`)
+
+`star@1`. `size` è il diametro di una stella tipo Sole a quel gradino di zoom; la classe lo scala. Le stelle fanno luce propria: nessun terminatore, la direzione della luce non cambia nulla.
+
+| Classe | Scala | Superficie → corona | Aspetto |
+|---|---|---|---|
+| O | 1,5 | `energy` → `ocean` | ciano-bianca, grande alone blu |
+| B | 1,3 | `ice` → `gas-cold` | azzurra |
+| A | 1,15 | `cloud` → `metal-light` | bianca, alone grigio |
+| F | 1,05 | `sand` → `sand` | crema |
+| G | 1 | `ui-warm` → `ui-warm` | oro |
+| K | 0,88 | `magma` (toni chiari) → `magma` | arancio |
+| M | 0,72 | `magma` (toni medi) → `magma` scuro | rossa, piccola |
+| nana bianca | 0,4 | `cloud` → `energy` | puntino bianco con bagliore a croce |
+| gigante rossa | 2,2 | `magma` → `magma` scuro | enorme, celle di convezione grandi |
+| stella di neutroni | 0,22 | `energy` → `crystal-magenta` | puntino con bagliore a croce magenta |
+
+- **Toni**: la palette è piena, quindi le classi riusano rampe esistenti con intervalli di toni diversi (K e M condividono `magma`: toni chiari contro toni medi). La superficie usa i toni più chiari della rampa e il tono più interno della corona coincide con quello del bordo: la luce scende senza salti dal nucleo allo spazio.
+- **Superficie**: oscuramento al bordo come `dz^p` (nucleo, anello, bordo leggibili); granulazione = celle di Worley sulla sfera in rotazione, ognuna con una sua fase che pulsa (`sin`), più corsie scure tra le celle. Loop perfetto: rotazione 96 frame, battito 48.
+- **Alone**: gradiente statico dal tono del bordo verso l'esterno, con dither e bordo irregolare (rumore sull'angolo). **Palette cycling** solo sui filamenti di corona: raggi sottili dal bordo i cui pixel ripetono i toni della corona in sequenza, così ruotare la tabella fa scorrere il plasma verso l'esterno. Ruotare i toni del gradiente, invece, lo capovolgeva (anello scuro attorno al disco).
+- **Stelle minuscole** (disco ≤ 8 px): bagliore a croce, perché si leggano come stelle e non come punti.
+- **Descrittore**: classe, etichetta spettrale (per esempio `G8 V`, `D3`, `NS`), temperatura, luminosità in soli, intensità 0..1 (per l'illuminazione dei pianeti), raggio, raggio dell'alone, centro. Dipende solo da ricetta e seed.
+
+### 7.3 Asteroidi (`gen/asteroid/`)
+
+`asteroid@1`, diametro medio da 6 a 48 px, materiali roccioso (`rock`/`ash`), metallico (`metal-dark` con venature `metal-light`), ghiacciato (`ice`/`cloud`) e cristallino (basalto con faccette `crystal-magenta` o `crystal-teal`); con `auto` il materiale viene dal seed.
+
+- **Silhouette**: raggio in coordinate polari = 1 + bozze (fbm campionato su un cerchio, quindi senza cucitura, al più 2 ottave: patate, non stelle) + allungamento (`cos 2θ`), normalizzato a media 1.
+- **Altezze**: cupola normalizzata sul contorno + rumore + crateri Worley (fondo basso, bordo rilevato); le faccette dei cristalli sono piani inclinati per cella di Worley. Shading con `shade`, forma di base e rampa d'ombra come i pianeti; pulizia dei pixel isolati sulla mappa dei materiali.
+- **Rotazione** nel piano dello schermo in funzione del frame (verso dal seed): forma e superficie girano insieme, la luce resta ferma.
+- **Descrittore**: materiale, raggio medio, centro, contorno (32 raggi normalizzati nel riferimento dell'oggetto, per la selezione con il clic: l'app li ruota del giro corrente), periodo e verso di rotazione.
+- **Validatore** `shape`: rapporto tra raggio massimo e minimo tra 1,15 (non troppo tondo) e 2,6 (non troppo sottile).
+
+### 7.4 Sfondi (`gen/background/`)
+
+`background@1`: sfondo infinito diviso in chunk (`size` = lato, default 256) indirizzati da `chunk.x`, `chunk.y` interi.
+
+- **Senza cuciture per costruzione**: tutto si calcola in coordinate globali (chunk × lato + pixel), anche il dither di Bayer; ciò che sta vicino a un bordo (stelle, galassie) viene disegnato da ogni chunk che tocca. Un test verifica che quattro chunk da 64 px accostati siano identici byte per byte a un chunk da 128.
+- **Strati** (`layer`): `nebula`, `far`, `mid`, `near`, che l'app farà scorrere a velocità diverse (parallasse); `all` li sovrappone su fondo `space` per le preview.
+- **Stelle**: una al più per cella di griglia (9, 22 e 54 px per strato), colori tenui (toni scuri di `space`, `ash`, `ice`, `sand`...), qualche croce luminosa solo nello strato vicino. **Scintillio** con palette cycling sui toni 0–2 di `metal-light`, rampa che nello sfondo usano solo le stelle che scintillano: ogni stella parte da un tono diverso, quindi non lampeggiano insieme.
+- **Nebulose**: fbm con domain warp; sotto la soglia trasparente, poi un velo neutro (`space` tono 2) e nei nuclei i toni 0–1 della rampa di regione, con una rampa d'accento in zone proprie; dither su ogni bordo. Toni scuri apposta: lo sfondo non compete con gli oggetti.
+- **Galassie lontane**: rare (una cella di 192 px su quattro circa, per `galaxies` = 1), 5–13 px, a spirale o ellittiche, tenui.
+- **Parametri di regione** dall'esterno (`region`): densità delle stelle, quantità di nebulose, rampa dominante e d'accento, frequenza delle galassie.
+- **Descrittore**: chunk, origine globale, numero di stelle per strato, galassie con posizione globale, copertura della nebulosa.
+
+**Prestazioni** (Node): stella 40 px ~4 ms (gigante rossa a 128 px ~75 ms), asteroide ~3 ms, chunk di sfondo 256 px ~38 ms con la nebulosa e ~0,2 ms per uno strato di stelle. Nell'app la nebulosa, statica, va messa in cache; lo scintillio ridisegna solo gli strati di stelle.
+
+**Punti deboli noti**:
+
+- I filamenti di corona sono discreti fino a sembrare poco visibili sotto i 32 px; la granulazione delle stelle piccole è solo un dither sul nucleo.
+- F e G, entrambe calde e chiare, si distinguono più per sfumatura che per colore.
+- Gli asteroidi ruotano nel piano: a 6–10 px la rotazione fa "saltare" qualche pixel del contorno.
+- Le nebulose sono nuvole morbide, senza filamenti né stelle giovani al loro interno; le galassie lontane sono quasi sempre macchie ellittiche.
+- Il dither di Bayer dei veli nebulari, in certe zone, forma righe verticali regolari.
+
 ## 8. Linee guida visive
 
 - **Risoluzione interna 480×270**, upscale intero. L'upscale è calcolato in pixel del dispositivo (`devicePixelRatio`), così un pixel del gioco è sempre un blocco esatto di pixel dello schermo.
@@ -377,6 +432,8 @@ Le ottave in meno non cambiano la normalizzazione (si somma un prefisso della st
 | `sheet <gen>` | Griglia di varianti di seed consecutivi (`--count 64 --from --cols 8`) con il seed sotto ogni cella; `12r2` = scelto al tentativo 2, `12!` = nessun tentativo valido |
 | `params <gen>` | Un parametro della ricetta nelle colonne (`--param a.b --values 1,2,3`), i seed nelle righe (`--seeds 0..7`) |
 | `sizes <gen>` | Lo stesso oggetto a più dimensioni affiancate (`--sizes 16,32,64,128,256`), per la coerenza tra gradini |
+| `chunks <gen>` | Griglia di chunk accostati senza spazi (`--x 0..2 --y 0..2`), per controllare le cuciture degli sfondi |
+| `scene <scena.json>` | Sfondo e oggetti composti da un file JSON (esempio: `recipes/scenes/step5.json`), con la luce di ogni oggetto che viene dal sole della scena |
 | `anim <gen>` | GIF in loop (`--frames`, default un giro del generatore, `--fps 24`); `--strip` scrive anche la striscia dei frame in PNG |
 | `lint <gen>` | Esegue i validatori su molti seed (`--count 256`): quanti passano al primo tentativo, quanti dopo i ritentativi, quanti mai, e perché |
 | `golden check\|update [gen]` | Confronta con `tests/golden/<gen>.json`, o lo riscrive consapevolmente |
@@ -416,7 +473,7 @@ Fuori dalla CLI: `npm run bench` (benchmark del core, §5.4) e `npm run palette`
 | 2 | **Stile, palette e toolkit**: palette master generata a rampe con hue shift; luce quantizzata, dither Bayer, shading, outline selettivo, pulizia, tabelle di swap/cycling/luce, RGBA, font 3×5 | fatto |
 | 3 | **Forge CLI**: registro dei generatori, schema delle ricette, ritentativi, generatore di prova; render, sheet, params, anim, lint, golden, list, swatches, zoom | fatto |
 | 4 | **Pianeti**: 9 archetipi con preset, mappe di superficie e nuvole, rotazione, terminatore, atmosfera, anelli, livello di dettaglio, descrittore, validatori; `forge sizes` | fatto |
-| 5 | **Stelle, asteroidi e sfondi**; SDF e rasterizzazione in `core/` se servono (per esempio agli asteroidi) | |
+| 5 | **Stelle, asteroidi e sfondi**: 10 classi spettrali, 4 materiali di asteroide, sfondo a chunk con parallasse, nebulose e galassie; `forge chunks` e `forge scene` | fatto |
 | 6 | **Universo**: galassia, settori, sistemi, orbite, nomi, indirizzi | |
 | 7 | **Esploratore**: renderer, zoom continuo a gradini con cache, tempo, interfaccia, pannello informativo; `forge view` | |
 | 8 | **Fenomeni rari e megastrutture**: buchi neri, pulsar, rovine, megastrutture | |
@@ -484,16 +541,27 @@ Formato: data, step, decisione e motivo. Le voci non si cancellano: se una decis
 - **2026-09-26, step 4: cache delle mappe nel generatore.** Otto voci, chiave = seed, ricetta, risoluzione e livello di dettaglio. Stato nel modulo che non cambia l'output: un'animazione da 96 frame costa una generazione di mappe invece di 96.
 - **2026-09-26, step 4: mappe del descrittore compatte nei golden.** Il descrittore porta la mappa 64 × 32 come stringhe (un simbolo per cella); nei golden le stringhe lunghe diventano la loro impronta, così i file restano leggibili (8 KB per 7 casi).
 - **2026-09-26, step 4: comando `forge sizes`.** Serve a `out/step4-sizes.png` e in generale alla verifica di coerenza tra gradini di zoom.
+- **2026-09-26, step 5: stelle con rampe esistenti.** La palette resta a 63 colori: ogni classe usa un intervallo di toni di una rampa già presente (K e M condividono `magma`). A 16 px le dieci classi si distinguono per colore, dimensione e forma dell'alone; non è servito alzare il limite.
+- **2026-09-26, step 5: la superficie di una stella continua nell'alone.** Dalle preview: con il bordo più scuro dell'alone interno la stella era una "cipolla" di anelli e non sembrava luminosa. Ora il tono più interno della corona coincide con quello del bordo del disco.
+- **2026-09-26, step 5: palette cycling sui filamenti, non sul gradiente.** Ruotare i toni di un gradiente radiale lo capovolge a ogni giro. Il cycling funziona dove i toni si ripetono in sequenza nello spazio: i filamenti di corona per le stelle, stelle che partono da toni diversi per lo scintillio.
+- **2026-09-26, step 5: granulazione come celle che pulsano.** Il rumore 3D non ha una dimensione libera per un tempo ciclico; celle di Worley con una fase propria che segue `sin` danno l'effetto "ribollire" e un loop esatto.
+- **2026-09-26, step 5: asteroidi che ruotano nel piano.** Come chiesto: silhouette polare e altezze nel riferimento dell'oggetto, girate con il frame. Più semplice di un corpo 3D irregolare con ray marching, e coerente con la luce fissa della stella.
+- **2026-09-26, step 5: sfondo in coordinate globali.** Le cuciture non vanno nascoste ma evitate: ogni elemento dipende solo dalla sua posizione globale (celle, rumore, dither), e gli elementi vicini ai bordi si disegnano da tutti i chunk che toccano.
+- **2026-09-26, step 5: nebulose scure.** Le prime avevano toni pieni di `gas-violet` e un blu saturo che competevano con i pianeti; ora sono un velo neutro con toni di colore solo nei nuclei.
+- **2026-09-26, step 5: SDF e rasterizzazione non servono ancora.** Anche le silhouette degli asteroidi si calcolano per pixel in coordinate polari; resta da valutare per le megastrutture (step 8).
+- **2026-09-26, step 5: `forge chunks` e `forge scene`.** Il primo serve per le cuciture, il secondo compone sfondo e oggetti a 480×270 con la luce che viene dal sole della scena: una prima versione di ciò che farà `forge view` allo step 7.
+- **2026-09-26, step 5: timeout dei test a 30 s.** Golden e test end to end rendono tutti i generatori; in parallelo, con cinque generatori, superavano i 5 s di default di Vitest.
 
 ## 15. Questioni aperte
 
-- **Spazio nella palette**: la palette è piena (63 su 63). Le rampe che serviranno agli step 5–8 (classi spettrali delle stelle, fenomeni) dovranno riusare le rampe esistenti, condividere di più, usare meno toni, oppure alzare il limite di 64 colori. Step 5.
+- **Spazio nella palette**: la palette è piena (63 su 63). Le stelle sono entrate riusando intervalli di toni; i fenomeni dello step 8 (buchi neri, pulsar) e le megastrutture potrebbero richiedere rampe nuove, quindi più condivisione o un limite più alto. Step 8.
 - **Cache nell'app**: la scelta del tentativo (resa canonica) e gli sprite per gradino vanno messi in cache per (generatore@versione, ricetta, seed). Step 7.
 - **Determinismo verificato anche nel browser**: come confrontare gli stessi golden in Node e nel browser. Step 3 o 7.
 - **Descrittore senza rasterizzare**: il descrittore dei pianeti viene già dalle mappe e non dai pixel, ma `generate` disegna sempre. Per l'universo servirà un `describe(recipe, seed)` senza resa, per il pannello e per cercare oggetti rari da lontano. Step 6.
 - **Forma dell'universo**: una galassia finita su un piano infinito di settori, o altro? Step 6.
 - **Gradini di dimensione**: quali (potenze di 2, √2…) e budget della cache. Step 7.
 - **Persistenza del catalogo**: storage del browser, export, entrambi. Step 9.
+- **Illuminazione dalla stella**: il descrittore delle stelle ha `intensity`; resta da decidere se l'intensità e il colore della stella cambiano l'aspetto dei pianeti (per esempio il livello di ambiente) o solo la direzione della luce. Step 6–7.
 - **Prestazioni nel browser**: i tempi del §5.4 sono misurati in Node; vanno verificati nell'app. Step 7.
 
 Risolte (vedi Decisioni): allo step 1 dimensione dei seed, `derive` a più componenti, indice 0 trasparente; allo step 2 palette unica globale, numero di rampe e di toni; allo step 3 formato dei golden dei generatori.
