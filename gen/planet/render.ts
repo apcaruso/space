@@ -64,7 +64,7 @@ function phase(frame: number, period: number): number {
 }
 
 /** Shading table, indexed by material code - 1. */
-function materials(r: PlanetRecipe): ShadeMaterial[] {
+export function materials(r: PlanetRecipe): ShadeMaterial[] {
   const byCode: ShadeMaterial[] = [];
   byCode[M.liquid] = { ramp: r.ramps.liquid, emissive: r.emissive.liquid };
   byCode[M.shallows] = { ramp: r.ramps.shallows, emissive: r.emissive.shallows };

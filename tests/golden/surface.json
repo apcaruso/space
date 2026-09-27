@@ -1,0 +1,245 @@
+{
+  "id": "surface@1",
+  "cases": [
+    {
+      "seed": 1,
+      "recipe": {
+        "archetype": "terran"
+      },
+      "size": 256,
+      "frame": 0,
+      "light": 315,
+      "seedUsed": 1,
+      "fingerprint": "c44bb721",
+      "descriptor": {
+        "archetype": "terran",
+        "land": 0.608,
+        "composition": {
+          "liquid": 0.313,
+          "shallows": 0.079,
+          "lowland": 0.337,
+          "highland": 0.086,
+          "cap": 0.186
+        },
+        "axis": {
+          "roll": -3.4,
+          "lean": -3.7
+        },
+        "rings": null,
+        "surface": {
+          "width": 64,
+          "height": 32,
+          "legend": [
+            "none",
+            "liquid",
+            "shallows",
+            "lowland",
+            "highland",
+            "cap",
+            "crack",
+            "band-dark",
+            "band-mid",
+            "band-light",
+            "storm",
+            "crater-floor",
+            "crater-rim",
+            "cloud"
+          ],
+          "materials": "fnv:049b5480 (2048 chars)",
+          "heights": "fnv:d93ae255 (2048 chars)"
+        },
+        "features": [],
+        "width": 256,
+        "height": 128,
+        "legend": [
+          {
+            "material": "liquid",
+            "ramp": "ocean",
+            "share": 0.306
+          },
+          {
+            "material": "shallows",
+            "ramp": "coast",
+            "share": 0.068
+          },
+          {
+            "material": "lowland",
+            "ramp": "vegetation",
+            "share": 0.35
+          },
+          {
+            "material": "highland",
+            "ramp": "rock",
+            "share": 0.082
+          },
+          {
+            "material": "cap",
+            "ramp": "ice",
+            "share": 0.194
+          }
+        ],
+        "centre": [
+          128,
+          64
+        ]
+      }
+    },
+    {
+      "seed": 2,
+      "recipe": {
+        "archetype": "gas"
+      },
+      "size": 128,
+      "frame": 0,
+      "light": 315,
+      "seedUsed": 2,
+      "fingerprint": "3e78135d",
+      "descriptor": {
+        "archetype": "gas",
+        "land": 1,
+        "composition": {
+          "band-dark": 0.349,
+          "band-mid": 0.256,
+          "band-light": 0.386,
+          "storm": 0.009
+        },
+        "axis": {
+          "roll": 12,
+          "lean": 19.5
+        },
+        "rings": {
+          "inner": 1.4,
+          "outer": 2.2
+        },
+        "surface": {
+          "width": 64,
+          "height": 32,
+          "legend": [
+            "none",
+            "liquid",
+            "shallows",
+            "lowland",
+            "highland",
+            "cap",
+            "crack",
+            "band-dark",
+            "band-mid",
+            "band-light",
+            "storm",
+            "crater-floor",
+            "crater-rim",
+            "cloud"
+          ],
+          "materials": "fnv:5059863c (2048 chars)",
+          "heights": "fnv:1f4505c5 (2048 chars)"
+        },
+        "features": [],
+        "width": 128,
+        "height": 64,
+        "legend": [
+          {
+            "material": "band-dark",
+            "ramp": "gas-warm",
+            "share": 0.324
+          },
+          {
+            "material": "band-mid",
+            "ramp": "gas-warm",
+            "share": 0.32
+          },
+          {
+            "material": "band-light",
+            "ramp": "gas-warm",
+            "share": 0.349
+          },
+          {
+            "material": "storm",
+            "ramp": "magma",
+            "share": 0.007
+          }
+        ],
+        "centre": [
+          64,
+          32
+        ]
+      }
+    },
+    {
+      "seed": 4,
+      "recipe": {
+        "archetype": "cratered"
+      },
+      "size": 192,
+      "frame": 0,
+      "light": 315,
+      "seedUsed": 4,
+      "fingerprint": "8eefd257",
+      "descriptor": {
+        "archetype": "cratered",
+        "land": 1,
+        "composition": {
+          "lowland": 0.753,
+          "highland": 0.001,
+          "crater-floor": 0.103,
+          "crater-rim": 0.143
+        },
+        "axis": {
+          "roll": 8.6,
+          "lean": 13
+        },
+        "rings": null,
+        "surface": {
+          "width": 64,
+          "height": 32,
+          "legend": [
+            "none",
+            "liquid",
+            "shallows",
+            "lowland",
+            "highland",
+            "cap",
+            "crack",
+            "band-dark",
+            "band-mid",
+            "band-light",
+            "storm",
+            "crater-floor",
+            "crater-rim",
+            "cloud"
+          ],
+          "materials": "fnv:4e21d4e6 (2048 chars)",
+          "heights": "fnv:dd65802b (2048 chars)"
+        },
+        "features": [],
+        "width": 192,
+        "height": 96,
+        "legend": [
+          {
+            "material": "lowland",
+            "ramp": "ash",
+            "share": 0.794
+          },
+          {
+            "material": "highland",
+            "ramp": "rock",
+            "share": 0.001
+          },
+          {
+            "material": "crater-floor",
+            "ramp": "ash",
+            "share": 0.083
+          },
+          {
+            "material": "crater-rim",
+            "ramp": "ash",
+            "share": 0.122
+          }
+        ],
+        "centre": [
+          96,
+          48
+        ]
+      }
+    }
+  ]
+}

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { lightFromAngle } from '../../toolkit/light';
 import { masterPalette } from '../../toolkit/palette';
 import { registry } from '../index';
+import { Registry } from '../registry';
+import { planet } from './index';
 import { ARCHETYPES, deepMerge, pickArchetype, resolvePlanet, type PlanetRecipe } from './recipe';
 
 const palette = masterPalette();
@@ -124,5 +126,31 @@ describe('planet generator', () => {
     expect(r.accepted).toBe(false);
     expect(r.rejections[0].reasons[0].validator).toBe('land');
     expect(r.rejections[0].reasons[0].reason).toMatch(/^terra \d+% \(serve 99-100%\)$/);
+  });
+});
+
+describe('validation without rasterising', () => {
+  it('picks the same attempt with describe as with a canonical render', () => {
+    const withRender = new Registry([{ ...planet, describe: undefined }]);
+    const withDescribe = new Registry([planet]);
+    let retried = 0;
+    // A narrow land range forces rejections, so retries are compared too.
+    const recipes = [{ archetype: 'terran', limits: { landMin: 0.45, landMax: 0.6 } }, { archetype: 'ocean' }, { archetype: 'cratered' }, { archetype: 'gas' }];
+    for (const recipe of recipes) {
+      for (let seed = 0; seed < 20; seed++) {
+        const a = withRender.select('planet', recipe, seed);
+        const b = withDescribe.select('planet', recipe, seed);
+        expect(b.seedUsed).toBe(a.seedUsed);
+        expect(b.accepted).toBe(a.accepted);
+        if (a.attempt > 0) retried++;
+      }
+    }
+    expect(retried).toBeGreaterThan(3);
+  });
+
+  it('shares the attempt between the planet and its surface map', () => {
+    for (let seed = 0; seed < 16; seed++) {
+      expect(registry.select('surface', { archetype: 'terran' }, seed).seedUsed).toBe(registry.select('planet', { archetype: 'terran' }, seed).seedUsed);
+    }
   });
 });

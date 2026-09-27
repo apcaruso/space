@@ -128,11 +128,11 @@ const GAP = 2;
 export function composeGrid(rows: readonly (readonly Cell[])[], opts: GridOptions): IndexedBuffer {
   const cells = rows.flat();
   const labelled = cells.some((c) => c.label !== undefined);
-  const cellW = Math.max(...cells.map((c) => Math.max(c.buffer.w, textWidth(c.label ?? ''))), ...(opts.colLabels ?? []).map(textWidth));
+  const cellW = Math.max(...cells.map((c) => Math.max(c.buffer.w, textWidth(c.label ?? ''))), ...(opts.colLabels ?? []).map((l) => textWidth(l)));
   const spriteH = Math.max(...cells.map((c) => c.buffer.h));
   const cellH = spriteH + (labelled ? LINE_HEIGHT : 0);
   const cols = Math.max(...rows.map((r) => r.length));
-  const left = opts.rowLabels === undefined ? 0 : Math.max(...opts.rowLabels.map(textWidth)) + 3;
+  const left = opts.rowLabels === undefined ? 0 : Math.max(...opts.rowLabels.map((l) => textWidth(l))) + 3;
   const top = (opts.title === undefined ? 0 : LINE_HEIGHT + 1) + (opts.colLabels === undefined ? 0 : LINE_HEIGHT);
   const w = MARGIN * 2 + left + cols * cellW + (cols - 1) * GAP;
   const h = MARGIN * 2 + top + rows.length * cellH + (rows.length - 1) * GAP;

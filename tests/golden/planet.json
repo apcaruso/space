@@ -1,5 +1,5 @@
 {
-  "id": "planet@1",
+  "id": "planet@2",
   "cases": [
     {
       "seed": 0,
@@ -8,7 +8,7 @@
       "frame": 0,
       "light": 290,
       "seedUsed": 0,
-      "fingerprint": "7336d15f",
+      "fingerprint": "88f6b6b4",
       "descriptor": {
         "archetype": "ocean",
         "radius": 32,
@@ -63,7 +63,7 @@
       "frame": 0,
       "light": 290,
       "seedUsed": 1,
-      "fingerprint": "f93fdf52",
+      "fingerprint": "a4dd3ad8",
       "descriptor": {
         "archetype": "terran",
         "radius": 32,
@@ -121,7 +121,7 @@
       "frame": 30,
       "light": 290,
       "seedUsed": 2,
-      "fingerprint": "a3e29e1e",
+      "fingerprint": "47d15aa3",
       "descriptor": {
         "archetype": "gas",
         "radius": 32,
@@ -178,7 +178,7 @@
       "frame": 0,
       "light": 90,
       "seedUsed": 3,
-      "fingerprint": "9411ae3a",
+      "fingerprint": "7770a8a9",
       "descriptor": {
         "archetype": "lava",
         "radius": 32,
@@ -233,7 +233,7 @@
       "frame": 0,
       "light": 290,
       "seedUsed": 4,
-      "fingerprint": "3e54cc07",
+      "fingerprint": "f37da22a",
       "descriptor": {
         "archetype": "cratered",
         "radius": 16,
@@ -287,7 +287,7 @@
       "frame": 0,
       "light": 290,
       "seedUsed": 5,
-      "fingerprint": "9333edbc",
+      "fingerprint": "522f0c2a",
       "descriptor": {
         "archetype": "ice",
         "radius": 8,
@@ -334,6 +334,61 @@
       }
     },
     {
+      "seed": 8,
+      "recipe": {
+        "archetype": "ocean"
+      },
+      "size": 8,
+      "frame": 0,
+      "light": 290,
+      "seedUsed": 8,
+      "fingerprint": "27479ebb",
+      "descriptor": {
+        "archetype": "ocean",
+        "radius": 4,
+        "centre": [
+          5,
+          5
+        ],
+        "land": 0.124,
+        "composition": {
+          "liquid": 0.784,
+          "shallows": 0.091,
+          "lowland": 0.022,
+          "highland": 0.025,
+          "cap": 0.076
+        },
+        "axis": {
+          "roll": -7.5,
+          "lean": -4.9
+        },
+        "rings": null,
+        "surface": {
+          "width": 64,
+          "height": 32,
+          "legend": [
+            "none",
+            "liquid",
+            "shallows",
+            "lowland",
+            "highland",
+            "cap",
+            "crack",
+            "band-dark",
+            "band-mid",
+            "band-light",
+            "storm",
+            "crater-floor",
+            "crater-rim",
+            "cloud"
+          ],
+          "materials": "fnv:2c9b102d (2048 chars)",
+          "heights": "fnv:1f4505c5 (2048 chars)"
+        },
+        "features": []
+      }
+    },
+    {
       "seed": 6,
       "recipe": {
         "archetype": "toxic"
@@ -342,7 +397,7 @@
       "frame": 11,
       "light": 290,
       "seedUsed": 6,
-      "fingerprint": "38a2dca3",
+      "fingerprint": "cd112c62",
       "descriptor": {
         "archetype": "toxic",
         "radius": 64,

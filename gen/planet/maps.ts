@@ -115,8 +115,28 @@ interface Storm {
   b: number;
 }
 
+interface Distribution {
+  lo: number;
+  hi: number;
+  sorted: Float64Array;
+}
+
+// Normalisation depends only on the full-detail field, not on the level of detail, so every
+// model of one planet shares it. Remembering it only saves time.
+const DISTRIBUTIONS = 256;
+const distributions = new Map<string, Distribution>();
+
+function sharedDistribution(key: string, field: () => Field3): Distribution {
+  const hit = distributions.get(key);
+  if (hit !== undefined) return hit;
+  const d = distribution(field());
+  if (distributions.size >= DISTRIBUTIONS) distributions.delete(distributions.keys().next().value as string);
+  distributions.set(key, d);
+  return d;
+}
+
 /** Normalisation range and value distribution of a field over the Fibonacci points. */
-function distribution(field: Field3): { lo: number; hi: number; sorted: Float64Array } {
+function distribution(field: Field3): Distribution {
   const p = new Float64Array(3);
   const values = new Float64Array(FIB_SAMPLES);
   for (let i = 0; i < FIB_SAMPLES; i++) {
@@ -160,8 +180,8 @@ export class PlanetModel {
     this.recipe = r;
     const octaves = Math.max(1, r.surface.octaves - octaveDrop);
     this.terrain = terrainField(r, seed, octaves);
-    const full = octaveDrop === 0 ? this.terrain : terrainField(r, seed, r.surface.octaves);
-    const t = distribution(full);
+    const key = `${seed}|${JSON.stringify(r)}`;
+    const t = sharedDistribution(`terrain|${key}`, () => (octaveDrop === 0 ? this.terrain : terrainField(r, seed, r.surface.octaves)));
     this.lo = t.lo;
     this.range = t.hi - t.lo || 1;
 
@@ -173,7 +193,8 @@ export class PlanetModel {
     if (r.clouds.coverage > 0) {
       const co = Math.max(1, r.clouds.octaves - octaveDrop);
       this.clouds = cloudField(r, seed, co);
-      const c = distribution(co === r.clouds.octaves ? this.clouds : cloudField(r, seed, r.clouds.octaves));
+      const clouds = this.clouds;
+      const c = sharedDistribution(`clouds|${key}`, () => (co === r.clouds.octaves ? clouds : cloudField(r, seed, r.clouds.octaves)));
       this.cloudLo = c.lo;
       this.cloudRange = c.hi - c.lo || 1;
       const q = c.sorted[Math.min(FIB_SAMPLES - 1, Math.floor((1 - r.clouds.coverage) * FIB_SAMPLES))];
@@ -314,14 +335,21 @@ export function buildMaps(model: PlanetModel, h: number, smooth: boolean): Surfa
   const codes = new Uint8Array(w * h);
   const heights = new Float32Array(w * h);
   const clouds = new Uint8Array(w * h);
+  // Longitudes are the same on every row: their sines and cosines once per column.
+  const cosLon = new Float64Array(w);
+  const sinLon = new Float64Array(w);
+  for (let i = 0; i < w; i++) {
+    const lon = ((i + 0.5) / w) * TAU;
+    cosLon[i] = cos(lon);
+    sinLon[i] = sin(lon);
+  }
   for (let j = 0; j < h; j++) {
     const lat = PI / 2 - ((j + 0.5) / h) * PI;
     const cl = cos(lat);
     const z = sin(lat);
     for (let i = 0; i < w; i++) {
-      const lon = ((i + 0.5) / w) * TAU;
-      const x = cl * cos(lon);
-      const y = cl * sin(lon);
+      const x = cl * cosLon[i];
+      const y = cl * sinLon[i];
       model.classify(x, y, z);
       codes[j * w + i] = model.code;
       heights[j * w + i] = model.height;

@@ -30,7 +30,7 @@ function fake(probe: Probe, every = 1, maxAttempts?: number): GeneratorDef<Field
       {
         name: 'divisible',
         check(result) {
-          probe.validatedSizes.push(result.buffer.w);
+          probe.validatedSizes.push('buffer' in result ? (result.buffer as IndexedBuffer).w : 0);
           const seed = result.descriptor.seed as number;
           return seed % every === 0 ? null : `seed ${seed} not divisible by ${every}`;
         },

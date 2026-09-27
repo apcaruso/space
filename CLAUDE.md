@@ -8,7 +8,7 @@ Tutta la grafica è generata da codice. Esistono solo **generatori** (algoritmi 
 
 ## Regole di determinismo
 
-Valgono in `core/`, `toolkit/`, `gen/`, `universe/` (moduli puri), test compresi. ESLint e `tsconfig.pure.json` ne impongono la maggior parte: se il lint si lamenta, correggi il codice, non la regola.
+Valgono in `core/`, `toolkit/`, `gen/`, `universe/`, `view/` (moduli puri), test compresi. ESLint e `tsconfig.pure.json` ne impongono la maggior parte: se il lint si lamenta, correggi il codice, non la regola.
 
 1. Un generatore è una funzione pura: stessi (ricetta, seed, opzioni, frame) → stessi byte, in Node e nel browser.
 2. Mai `Math.random`, `Date` o `performance.now`.
@@ -54,6 +54,8 @@ Dopo ogni modifica visiva:
 | Forma della galassia | `galaxy --galaxy n` (intera), `galaxy --center sx,sy --radius 12` (regione): bracci e nucleo devono leggersi, non un rumore uniforme |
 | Sistemi e orbite | `systems` (16 sistemi a caso con indirizzo), poi `system <indirizzo> --tick n`; il tempo che scorre con `--frames 48` (per guardarlo, rendi alcune PNG a tick diversi) |
 | Distribuzioni dell'universo | `census` (10 000 sistemi contro gli intervalli attesi di `universe/census.ts`) |
+| L'esploratore senza browser | `view <indirizzo> --zoom galaxy\|region\|system\|body\|surface` (PNG), `--zoom a --zoom-to b --frames n --strip` (GIF e striscia); stampa tempo per frame e tempi di generazione |
+| L'esploratore nel browser | `npm run build`, `npx vite preview`, poi Chromium headless con Playwright dalla cache di npx (`executablePath` del Chromium in `~/Library/Caches/ms-playwright`): `window.explorer` e `window.pool` per stato e misure, `?a=<indirizzo>&z=<zoom>&debug` per aprire una vista con l'overlay F3 |
 | L'output è cambiato? | `golden check`; dopo un cambio voluto: alza la versione del generatore e `golden update <gen>` |
 | Generatori e parametri disponibili | `list` |
 
@@ -65,34 +67,38 @@ Usa sempre `--bg` per guardare: su trasparenza le etichette chiare non si leggon
 |---|---|
 | `npm run check` | typecheck + lint + test |
 | `npm test` | Vitest una volta (`npm run test:watch` in watch) |
-| `npm test -- -u` | Rigenera i golden del core e dell'universo (`tests/golden/core.json`, `universe.json`): solo per cambi voluti, annotati in Decisioni (per l'universo alza `UNIVERSE_VERSION`) |
+| `npm test -- -u` | Rigenera i golden del core, dell'universo e delle viste (`tests/golden/core.json`, `universe.json`, `view.json`): solo per cambi voluti, annotati in Decisioni (per l'universo alza `UNIVERSE_VERSION`) |
 | `npm run bench` | Benchmark del core in Node (`forge/bench.ts`) |
 | `npm run palette` | Rigenera `style/palette.json` da `style/ramps.json` (mai modificare palette.json a mano) |
 | `npm run lint` | ESLint, comprese le regole di determinismo |
 | `npm run typecheck` | `tsc -b` su tutti i tsconfig |
-| `npm run forge -- <cmd>` | CLI forge: `render`, `sheet`, `params`, `sizes`, `anim`, `chunks`, `scene`, `galaxy`, `system`, `systems`, `census`, `lint`, `golden`, `list`, `swatches`, `zoom`; `help <cmd>` per le opzioni |
-| `npm run dev` / `npm run build` | App Vite (root `app/`, build in `dist/`) |
+| `npm run forge -- <cmd>` | CLI forge: `render`, `sheet`, `params`, `sizes`, `anim`, `chunks`, `scene`, `galaxy`, `system`, `systems`, `census`, `view`, `lint`, `golden`, `list`, `swatches`, `zoom`; `help <cmd>` per le opzioni |
+| `npm run dev` / `npm run build` | L'esploratore (Vite, root `app/`, build in `dist/`); in pagina: F3 debug, `/` ricerca, 1–5 velocità, spazio pausa, T passaggio tra gradini, h aiuto |
 
 ## Dove sta cosa
 
 ```
 core/       hash, derive, Rng, dmath, rumore, buffer, impronte                       (puro)
 toolkit/    colore, palette e tabelle, luce, dither, shade, outline, pulizia, font   (puro)
-gen/        registry, schema, index (elenco), testdisc, planet/, star/, asteroid/,
-            background/, maps/ (mappe di galassia e sistemi); poi phenomena,
-            megastructure, ui                                                        (puro)
+gen/        registry, schema, index (elenco), testdisc, planet/ (planet e surface), star/,
+            asteroid/, background/, maps/ (mappe di galassia e sistemi di forge);
+            poi phenomena, megastructure                                             (puro)
 universe/   coords, galaxy (forma, settori), stars, system (sistemi), orbit, names,
             address (indirizzi), census (statistiche)                               (puro)
+view/       esploratore senza browser: camera, steps (gradini), geometry, catalogue,
+            haze (bagliore), sprites (cache), world, explorer, flight, places, info,
+            present, ui/ (font nei pannelli, icone, hud)                            (puro)
 style/      ramps.json (parametri) -> palette.json (generata): 63 colori + trasparente
 recipes/    preset (planets/*.json), scene di prova (scenes/*.json), oggetti speciali
 forge/      CLI (cli.ts, run.ts, commands/), golden dei generatori, script palette e bench
-app/        esploratore nel browser
-docs/       DESIGN.md, plans/ (piani scritti prima del codice, es. step-06.md)
-tests/      golden/core.json (core), golden/universe.json (universo) e golden/<gen>.json
-            (generatori): impronte attese
+app/        esploratore nel browser: main (canvas, input, loop, URL), sprites (pool di
+            worker), worker
+docs/       DESIGN.md, plans/ (piani scritti prima del codice, es. step-07.md)
+tests/      golden/core.json (core), universe.json (universo), view.json (viste) e
+            golden/<gen>.json (generatori): impronte attese
 out/        preview generate (ignorata da git)
 ```
 
-Dipendenze ammesse (imposte da ESLint): `core` ← `toolkit` ← `gen`; `core` ← `universe`; `gen` può usare `universe`, non il contrario; `app/` e `forge/` usano i moduli puri; `app/` non importa da `forge/`. Dipendenze npm solo in `forge/` e `app/`.
+Dipendenze ammesse (imposte da ESLint): `core` ← `toolkit` ← `gen` ← `view`; `core` ← `universe`; `gen` e `view` possono usare `universe`, non il contrario; nessun modulo puro importa da `view`; `app/` e `forge/` usano i moduli puri; `app/` non importa da `forge/`. Dipendenze npm solo in `forge/` e `app/`.
 
 Test: `*.test.ts` accanto al codice.

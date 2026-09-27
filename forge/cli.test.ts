@@ -100,7 +100,7 @@ describe('forge CLI end to end on testdisc', () => {
     const golden = cli('golden', 'check');
     expect(golden.err).toBe('');
     expect(golden.code).toBe(0);
-    expect(golden.out).toBe('asteroid: ok\nbackground: ok\nplanet: ok\nstar: ok\ntestdisc: ok');
+    expect(golden.out).toBe('asteroid: ok\nbackground: ok\nplanet: ok\nstar: ok\nsurface: ok\ntestdisc: ok');
   });
 });
 
@@ -125,7 +125,7 @@ describe('forge CLI errors', () => {
     expect(typo.err).toContain('uso: npm run forge -- render <gen>');
     expect(cli('render', 'testdisc', '--size', 'big').err).toContain('--size vuole un intero, ricevuto "big"');
     expect(cli('render', 'testdisc', '--size', '999').err).toContain('la dimensione deve essere un intero tra 16 e 256');
-    expect(cli('render', 'moon').err).toContain('generatore sconosciuto "moon"; registrati: asteroid, background, planet, star, testdisc');
+    expect(cli('render', 'moon').err).toContain('generatore sconosciuto "moon"; registrati: asteroid, background, planet, star, surface, testdisc');
     expect(cli('render', 'testdisc', '-o', 'elsewhere.png').err).toContain("l'uscita deve stare dentro out/");
     expect(cli('params', 'testdisc', '--param', 'noise.octave', '--values', '1').err).toContain('forse intendevi "octaves"?');
     expect(cli('params', 'testdisc', '--param', 'relief', '--values', '0.1,9').err).toContain('ricetta.relief: atteso un numero tra 0 e 0.5, ricevuto 9');
@@ -134,7 +134,7 @@ describe('forge CLI errors', () => {
 
   it('runs as a real process, with the same bytes as in-process', () => {
     const out = execFileSync('node_modules/.bin/tsx', ['forge/cli.ts', 'list'], { encoding: 'utf8' });
-    expect(out).toContain('planet@1');
+    expect(out).toContain('planet@2');
     expect(() => execFileSync('node_modules/.bin/tsx', ['forge/cli.ts', 'render'], { stdio: 'pipe' })).toThrow();
     for (const [file, argv] of [
       ['proc.png', ['render', 'testdisc', '--seed', '12', '--size', '40']],
@@ -177,6 +177,20 @@ describe('forge CLI on the universe', () => {
     expect(cli('system', '0.1').err).toContain('il settore vuole due coordinate');
     expect(cli('system', '0.99999.0.0').err).toContain('ha 0 sistemi');
     expect(cli('system', '0.3.4').err).toContain("deve arrivare almeno al sistema");
+  });
+
+  it('renders explorer views in Node, as PNG and as a zooming GIF', () => {
+    const png1 = cli('view', '0.h.1p.0.p2', '--zoom', 'body', '--scale', '1', '-o', `${DIR}/view.png`);
+    expect(png1.code).toBe(0);
+    expect(png1.out).toContain('tempo per frame a regime');
+    expect(png1.out).toMatch(/generazione planet: \d+ sprite/);
+    expect([png(`${DIR}/view.png`).width, png(`${DIR}/view.png`).height]).toEqual([480, 270]);
+    const gif = cli('view', '0.h.1p.0', '--zoom', '11', '--zoom-to', '12', '--frames', '3', '--scale', '1', '-o', `${DIR}/view.gif`);
+    expect(gif.code).toBe(0);
+    expect(gif.out).toContain('3 fotogrammi, zoom 11.00..12.00');
+    expect(readFileSync(`${DIR}/view.gif`).subarray(0, 6).toString()).toBe('GIF89a');
+    expect(cli('view', '0.h.1p.0', '--zoom', 'vicino').err).toContain('--zoom vuole un numero o un livello');
+    expect(cli('view', '0.99999.0.0').err).toContain('ha 0 sistemi');
   });
 
   it('takes a census of 10,000 systems, prints it and finds every value in range', () => {

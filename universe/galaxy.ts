@@ -68,12 +68,25 @@ export interface Character {
   readonly accentRamp: string;
 }
 
-/** Nebula colours: warm dust near the core, violet, magenta or teal emission in the disc. */
+export const NEBULA_RAMPS: readonly (readonly [string, string])[] = [
+  ['gas-warm', 'magma'],
+  ['crystal-magenta', 'gas-violet'],
+  ['crystal-teal', 'gas-cold'],
+  ['gas-violet', 'ocean'],
+];
+
+/** Index in NEBULA_RAMPS: warm dust near the core, magenta, teal or violet emission in the disc. */
+export function nebulaRampIndex(core: number, hue: number): number {
+  if (core > 0.35) return 0;
+  if (hue < -0.15) return 1;
+  if (hue > 0.18) return 2;
+  return 3;
+}
+
+/** Nebula colours (main and accent ramp) of a point of the galaxy. */
 export function nebulaRamps(core: number, hue: number): [string, string] {
-  if (core > 0.35) return ['gas-warm', 'magma'];
-  if (hue < -0.15) return ['crystal-magenta', 'gas-violet'];
-  if (hue > 0.18) return ['crystal-teal', 'gas-cold'];
-  return ['gas-violet', 'ocean'];
+  const [a, b] = NEBULA_RAMPS[nebulaRampIndex(core, hue)];
+  return [a, b];
 }
 
 /** Density and the terms the sector character is made of. */

@@ -12,7 +12,7 @@ import { apoapsis, orbitPosition, periodTicks, type Orbit } from './orbit';
 import { pickStarClass, starIdentity, starType } from './stars';
 
 /** Bumped whenever the same address would produce a different universe. */
-export const UNIVERSE_VERSION = 1;
+export const UNIVERSE_VERSION = 2;
 
 /** Solar radius and Earth radius in AU. */
 const SUN_RADIUS_AU = 0.00465;
@@ -193,7 +193,21 @@ export function systemSummary(sector: SectorInfo, i: number): SystemSummary {
   return { index: i, position: systemPosition(sector, i), stars };
 }
 
-/** Names and codes of the systems 0..i of a sector; each name avoids the ones before it. */
+/** Names and catalogue codes of every system of a sector; each name avoids the ones before it. */
+export function sectorNames(sector: SectorInfo): { name: string; code: string }[] {
+  const taken = new Set<string>();
+  const letters = sectorLetters(sector.seed);
+  const numbers = catalogNumbers(sector.seed, sector.count);
+  const out: { name: string; code: string }[] = [];
+  for (let j = 0; j < sector.count; j++) {
+    const name = properName(sector.style, derive(sector.seed, 'system', j, 'name'), taken);
+    taken.add(name);
+    out.push({ name, code: catalogCode(letters, numbers[j]) });
+  }
+  return out;
+}
+
+/** Name and code of system i: the names before it decide which ones are taken. */
 function systemNames(sector: SectorInfo, i: number): { name: string; code: string } {
   const taken = new Set<string>();
   let name = '';
@@ -250,7 +264,8 @@ function planetRecipe(archetype: PlanetArchetype, rings: boolean, rot: Rotation)
     archetype,
     rings: { chance: rings ? 1 : 0 },
     period: rot.period,
-    clouds: { period: Math.max(8, Math.round(rot.period * 0.8)) },
+    // Twice the day: surface and clouds together repeat every 2 x period ticks (see rotationFrame).
+    clouds: { period: Math.min(MAX_ROTATION, 2 * rot.period) },
   };
 }
 
@@ -464,7 +479,11 @@ export function moonPosition(planet: Planet, moon: Moon, tick: number): { x: num
   return { x: p.x + m.x * k, y: p.y + m.y * k };
 }
 
-/** Frame of a rotating body at `tick`: what its generator gets as `frame`. */
+/**
+ * Frame of a rotating body at `tick`: what its generator gets as `frame`. Surface and clouds
+ * (twice the day) repeat every 2 x period, so frames repeat too and can be cached.
+ */
 export function rotationFrame(rot: Rotation, tick: number): number {
-  return (((tick + rot.phase) % rot.period) + rot.period) % rot.period;
+  const loop = 2 * rot.period;
+  return (((tick + rot.phase) % loop) + loop) % loop;
 }

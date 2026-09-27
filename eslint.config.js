@@ -4,7 +4,7 @@ import { defineConfig } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 
 // Pure, deterministic modules: same bytes in Node and in the browser (see CLAUDE.md).
-const PURE = ['core', 'toolkit', 'gen', 'universe'];
+const PURE = ['core', 'toolkit', 'gen', 'universe', 'view'];
 const ts = (dir) => `${dir}/**/*.ts`;
 const tests = (dir) => `${dir}/**/*.test.ts`;
 
@@ -62,16 +62,17 @@ const determinismRules = {
 
 // Allowed dependencies between modules (see "Dipendenze tra moduli" in docs/DESIGN.md).
 const FORBIDDEN_IMPORTS = {
-  core: ['toolkit', 'gen', 'universe', 'forge', 'app'],
-  toolkit: ['gen', 'universe', 'forge', 'app'],
-  gen: ['forge', 'app'],
-  universe: ['toolkit', 'gen', 'forge', 'app'],
+  core: ['toolkit', 'gen', 'universe', 'view', 'forge', 'app'],
+  toolkit: ['gen', 'universe', 'view', 'forge', 'app'],
+  gen: ['view', 'forge', 'app'],
+  universe: ['toolkit', 'gen', 'view', 'forge', 'app'],
+  view: ['forge', 'app'],
   app: ['forge'],
 };
 
 const NO_PACKAGES = {
   regex: '^(?!\\.\\.?/)',
-  message: 'Nessuna dipendenza esterna in core/, toolkit/, gen/, universe/: solo import relativi.',
+  message: 'Nessuna dipendenza esterna in core/, toolkit/, gen/, universe/, view/: solo import relativi.',
 };
 
 function importRule(layer, { packages }) {

@@ -29,10 +29,13 @@ export interface GenResult {
   descriptor: Descriptor;
 }
 
-/** Rejects ugly results: returns a reason, or null when the result is fine. */
+/**
+ * Rejects ugly results: returns a reason, or null when the result is fine. Validators read only
+ * the descriptor, so generators with `describe` are judged without drawing a pixel.
+ */
 export interface Validator<R> {
   readonly name: string;
-  check(result: GenResult, recipe: R): string | null;
+  check(result: { readonly descriptor: Descriptor }, recipe: R): string | null;
 }
 
 /** One fixed (recipe, seed, options) combination whose output is pinned by `forge golden`. */
@@ -63,6 +66,12 @@ export interface GeneratorDef<F extends Fields> {
   /** Default light, degrees (see lightFromAngle); default azimuth 315, elevation 40. */
   readonly light?: { readonly azimuth: number; readonly elevation: number };
   generate(recipe: Infer<ObjectField<F>>, seed: number, opts: GenerateOptions): GenResult;
+  /**
+   * The descriptor fields that do not depend on size, frame or light, without rasterising.
+   * When present, validators judge this instead of a canonical render, so it must contain every
+   * field they read, with the same values `generate` would put in its descriptor.
+   */
+  describe?(recipe: Infer<ObjectField<F>>, seed: number): Descriptor;
   readonly validators?: readonly Validator<Infer<ObjectField<F>>>[];
   /** Attempts before giving up, including the first. Default 8. */
   readonly maxAttempts?: number;
@@ -120,8 +129,12 @@ export function attemptSeed(seed: number, attempt: number): number {
   return attempt === 0 ? seed >>> 0 : derive(seed, 'retry', attempt);
 }
 
+/** Selections remembered by the registry; a hit returns exactly what selecting again would. */
+const SELECTION_MEMO = 4096;
+
 export class Registry {
   private readonly defs: readonly GeneratorDef<Fields>[];
+  private readonly memo = new Map<string, Selection>();
 
   constructor(defs: readonly GeneratorDef<Fields>[]) {
     const names = new Set<string>();
@@ -174,26 +187,38 @@ export class Registry {
    */
   select(name: string, recipeInput: unknown, seed: number): Selection & { readonly canonical?: GenResult } {
     const def = this.get(name);
+    const key = `${name}|${seed >>> 0}|${JSON.stringify(recipeInput ?? null)}`;
+    const known = this.memo.get(key);
+    if (known !== undefined) return known;
     const recipe = this.recipe(name, recipeInput, seed);
     const validators = def.validators ?? [];
     const base = { id: generatorId(def), recipe, seed: seed >>> 0 };
-    if (validators.length === 0) return { ...base, seedUsed: attemptSeed(seed, 0), attempt: 0, accepted: true, rejections: [] };
-
-    const canonical = this.options(name, {});
-    const rejections: Rejection[] = [];
-    const maxAttempts = def.maxAttempts ?? 8;
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const s = attemptSeed(seed, attempt);
-      const result = def.generate(recipe, s, canonical);
-      const reasons = [];
-      for (const v of validators) {
-        const reason = v.check(result, recipe);
-        if (reason !== null) reasons.push({ validator: v.name, reason });
+    let result: Selection & { readonly canonical?: GenResult } = { ...base, seedUsed: attemptSeed(seed, 0), attempt: 0, accepted: true, rejections: [] };
+    if (validators.length > 0) {
+      const canonical = this.options(name, {});
+      const rejections: Rejection[] = [];
+      const maxAttempts = def.maxAttempts ?? 8;
+      result = { ...base, seedUsed: attemptSeed(seed, 0), attempt: 0, accepted: false, rejections };
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const s = attemptSeed(seed, attempt);
+        const judged = def.describe !== undefined ? { descriptor: def.describe(recipe, s) } : def.generate(recipe, s, canonical);
+        const reasons = [];
+        for (const v of validators) {
+          const reason = v.check(judged, recipe);
+          if (reason !== null) reasons.push({ validator: v.name, reason });
+        }
+        if (reasons.length === 0) {
+          result = { ...base, seedUsed: s, attempt, accepted: true, rejections, ...('buffer' in judged ? { canonical: judged } : {}) };
+          break;
+        }
+        rejections.push({ attempt, seed: s, reasons });
       }
-      if (reasons.length === 0) return { ...base, seedUsed: s, attempt, accepted: true, rejections, canonical: result };
-      rejections.push({ attempt, seed: s, reasons });
     }
-    return { ...base, seedUsed: attemptSeed(seed, 0), attempt: 0, accepted: false, rejections };
+    // Only the selection is remembered, never a canonical render: renders stay cheap to drop.
+    const { canonical: _, ...selection } = result;
+    if (this.memo.size >= SELECTION_MEMO) this.memo.delete(this.memo.keys().next().value as string);
+    this.memo.set(key, selection);
+    return result;
   }
 
   /** Generates an object: select the attempt, then render it with the requested options. */
