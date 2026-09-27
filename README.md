@@ -132,3 +132,7 @@ Allowed dependencies: `core` ← `toolkit` ← `gen` ← `view`, and `core` ← 
 ## Stack
 
 TypeScript 6 (strict, ESM), Vite 8, Vitest 4, ESLint 10 with typescript-eslint, and tsx for the CLI. `forge` uses `pngjs` and `gifenc` to write images. The browser app has no runtime dependencies.
+
+## License
+
+[PolyForm Noncommercial 1.0.0](LICENSE.md). You may use, study, modify and share the code for any non-commercial purpose, such as personal projects, research, education and hobby work. Commercial use is not permitted.
