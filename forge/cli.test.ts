@@ -146,3 +146,44 @@ describe('forge CLI errors', () => {
     }
   });
 });
+
+describe('forge CLI on the universe', () => {
+  it('maps the whole galaxy and a region', () => {
+    const whole = cli('galaxy', '--galaxy', '1', '--scale', '1', '-o', `${DIR}/galaxy.png`);
+    expect(whole.code).toBe(0);
+    expect(whole.out).toMatch(/galassia 1: raggio \d+ settori, 3 bracci/);
+    expect(png(`${DIR}/galaxy.png`).width).toBeGreaterThan(400);
+    const region = cli('galaxy', '--center', '-12,40', '--radius', '2', '--cell', '6', '--scale', '1', '-o', `${DIR}/region.png`);
+    expect(region.code).toBe(0);
+    expect(region.out).toContain('settori -14..-10, 38..42');
+    expect(png(`${DIR}/region.png`).width).toBe(30);
+    expect(cli('galaxy', '--center', '1').err).toContain('--center vuole due interi "sx,sy"');
+  });
+
+  it('shows systems as PNG and GIF, and lists random ones with their addresses', () => {
+    const list = cli('systems', '--count', '2', '--size', '64', '-o', `${DIR}/systems.png`);
+    expect(list.code).toBe(0);
+    const address = list.out.split('\n')[0].split(' ')[0];
+    expect(address).toMatch(/^0\.-?[0-9a-z]+\.-?[0-9a-z]+\.[0-9a-z]+$/);
+    const view = cli('system', `${address}.s0`, '--size', '96', '--tick', '100', '--scale', '1', '-o', `${DIR}/system.png`);
+    expect(view.code).toBe(0);
+    expect(view.out).toContain(`indirizzo ${address}`);
+    expect(view.out).toContain('stella ');
+    expect(png(`${DIR}/system.png`).width).toBe(96);
+    const anim = cli('system', address, '--size', '64', '--frames', '2', '--step', '50', '--scale', '1', '-o', `${DIR}/system.gif`);
+    expect(anim.code).toBe(0);
+    expect(anim.out).toContain('tick 0..50 (passo 50)');
+    expect(readFileSync(`${DIR}/system.gif`).subarray(0, 6).toString()).toBe('GIF89a');
+    expect(cli('system', '0.1').err).toContain('il settore vuole due coordinate');
+    expect(cli('system', '0.99999.0.0').err).toContain('ha 0 sistemi');
+    expect(cli('system', '0.3.4').err).toContain("deve arrivare almeno al sistema");
+  });
+
+  it('takes a census of 10,000 systems, prints it and finds every value in range', () => {
+    const r = cli('census', '--count', '10000', '--galaxy', '3');
+    console.log(r.out);
+    expect(r.out).toContain('censimento di 10000 sistemi della galassia 3');
+    expect(r.out).not.toContain('FUORI');
+    expect(r.code).toBe(0);
+  });
+});

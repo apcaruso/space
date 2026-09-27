@@ -59,7 +59,7 @@ app   ──► tutti i moduli puri, style/, recipes/      (app non importa null
 - `toolkit/` importa solo da `core/`.
 - `universe/` importa solo da `core/`: decide *che cosa* esiste (tipo, seed, parametri fisici), non *come appare*.
 - `gen/` importa da `core/`, `toolkit/` ed eventualmente da `universe/` (vocabolario condiviso, tipi).
-- Chi unisce universo e grafica sono `app/` e `forge/`.
+- Chi unisce universo e grafica sono `app/` e `forge/`; le mappe di `gen/maps/` disegnano oggetti dell'universo, ma solo in lettura.
 
 Queste regole sono imposte da ESLint (`no-restricted-imports` in `eslint.config.js`).
 
@@ -400,27 +400,39 @@ Le ottave in meno non cambiano la normalizzazione (si somma un prefisso della st
 
 ## 9. Universo
 
-- **Gerarchia**: seed di galassia → struttura della galassia (bracci, densità) → settori su griglia intera → sistemi → stelle, pianeti, lune, anelli, fasce di asteroidi → superfici.
-- **Settori**: ogni settore si genera da solo a partire dal seed di galassia e dalle sue coordinate intere, senza dipendere dai vicini né dall'ordine di esplorazione.
+Tutto in `universe/`, logica pura e deterministica che importa solo da `core/`: l'universo decide *che cosa* esiste e dove, i generatori *come appare*. Il modello dati completo (unità, seed, formati, tabelle) è in `docs/plans/step-06.md`.
+
+- **Forma**: una galassia finita su una griglia infinita di settori interi (anche negativi); il centro è nel settore (0, 0). Fuori dal disco la griglia continua, vuota.
+- **Gerarchia dei seed**: galassia `G` → forma `derive(G, "shape")` → settore `S = derive(G, "sector", sx, sy)` → sistema `Y = derive(S, "system", i)` → stelle, pianeti `P = derive(Y, "planet", n)`, lune `derive(P, "moon", m)`, fasce, comete → aspetto `derive(P, "look")`, il seed dato al generatore. Nessun livello legge i fratelli: un sistema si genera da galassia, settore e indice, senza generare altro (accesso casuale).
+- **Densità** (`Galaxy.sample`): disco esponenziale che si spegne oltre il raggio (180–240 settori), nucleo gaussiano, barra nel 55% delle galassie, 2–4 bracci a spirale logaritmica con un domain warp che li rende irregolari, grumi (fbm), vuoti (rumore a bassa frequenza sotto soglia), ammassi rari anche fuori dal disco (globulari), un alone debolissimo.
+- **Settore** (`Galaxy.sector`): numero di sistemi 0–16 (binomiale su 16 celle con media 12 × densità), posizione del sistema i in una cella distinta di una griglia 4 × 4, e **carattere**: età della popolazione (giovane nei bracci, vecchia nel nucleo), quantità e colori delle nebulose, densità delle stelle di sfondo, stile dei nomi. `backgroundRegion` lo traduce nei parametri `region` del generatore `background`. `Galaxy.character(gx, gy)` dà lo stesso carattere in qualsiasi punto, per le mappe.
+- **Stelle** (`universe/stars.ts`, dati fisici condivisi con `gen/star`): classe da due popolazioni (giovane e vecchia) pesate con l'età del settore; sottotipo, massa, luminosità, temperatura e raggio dal seed. Binarie 12% (coppia stretta attorno al baricentro, pianeti circumbinari), triple 2% (terza stella lontana, oltre i pianeti).
+- **Pianeti**: numero dalla classe della stella; orbite a distanze crescenti (primo semiasse 0,15–0,5 √L UA, poi × 1,5–2,2); archetipo dalla zona (calda, abitabile, fredda, oltre la linea della neve) e dalla stella (meno giganti attorno alle nane rosse, solo mondi morti o craterizzati attorno ai resti); raggio, anelli, rotazione (bloccata per i pianeti caldi delle nane M e K). **Lune** con rotazione sincrona, **fasce** di asteroidi al posto di un'orbita (spesso alla linea della neve), **comete** su orbite eccentriche, le sole che incrociano le altre.
+- **Aspetto**: ogni corpo porta `recipe` (archetipo, anelli sì o no, periodo di rotazione, periodo delle nuvole) e `look`; il preset e la variante li sceglie il generatore.
+- **Nomi** (`universe/names.ts`): cinque grammatiche di sillabe (liquida, aspra, vocalica, sibilante, composta) assegnate a regioni della galassia con celle di Worley; nome proprio unico nel settore, sigla da catalogo `XX-NNNN` (lettere del settore senza I e O, numeri distinti nel settore); stelle `A`, `B`, `C`, pianeti `b`, `c`… ("KX-4471 b"), lune in numeri romani ("KX-4471 b II"), nome proprio anche per i pianeti della zona abitabile, comete `P/KX-4471-1`. Filtri: nessun nome reale (confronto esatto) e nessuna radice offensiva italiana o inglese (sottostringa senza accenti e maiuscole); un nome scartato si rigenera.
+- **Indirizzi** (`universe/address.ts`): `<galassia>[.<sx>.<sy>[.<sistema>[.<corpo>]]]`, galassia, settore e sistema in base 36, corpo `s<k>` stella, `p<n>` pianeta, `p<n>m<k>` luna, `a<k>` fascia, `c<k>` cometa con indici decimali; solo `[0-9a-z.-]`. Esempio: `51u7i0.-c.14.3.p2m1`. `parseAddress` spiega gli errori in italiano, `resolve` verifica che l'oggetto esista. Zoom e tick non fanno parte dell'indirizzo.
+- **Versione**: `UNIVERSE_VERSION` (ora 1) cambia quando lo stesso indirizzo porterebbe a un oggetto diverso; `tests/golden/universe.json` se ne accorge.
+- **Censimento** (`universe/census.ts`): sistemi scelti uniformemente tra tutti quelli della galassia e intervalli attesi (classi, molteplicità, archetipi, lune, anelli, fasce, comete); `forge census` li stampa e i test li verificano su 10 000 sistemi.
 - **Scale di zoom**:
 
 | Livello | Cosa si vede | Cosa si genera |
 |---|---|---|
-| Galassia | Struttura a bracci, densità, fenomeni visibili da lontano | `background`, punti stella |
-| Regione stellare | Stelle di più settori | `star` a gradini piccoli |
-| Sistema | Stella, orbite, pianeti, fasce | `star`, `planet`, `asteroid` |
+| Galassia | Struttura a bracci, densità, fenomeni visibili da lontano | `gen/maps/galaxy.ts`, `background` |
+| Regione stellare | Stelle di più settori | `regionMap`, `star` a gradini piccoli |
+| Sistema | Stella, orbite, pianeti, fasce | `gen/maps/system.ts` con `star`, `planet`, `asteroid` |
 | Corpo celeste | Pianeta con lune e anelli, nuvole, terminatore | `planet` a gradini grandi |
 | Superficie | Mappa di superficie del pianeta | dalla mappa nel descrittore di `planet` |
 
-- **Nomi e classificazioni**: generati in modo deterministico dal seed dell'oggetto.
-- **Indirizzi**: una stringa che identifica esattamente un punto dell'universo (seed di galassia, settore, sistema, percorso del corpo, zoom, tick). Serve per i link e per il catalogo. Formato da definire allo step 6.
+- **Mappe** (`gen/maps/`): funzioni di disegno, non generatori registrati, perché leggono oggetti dell'universo invece di una ricetta. `galaxyMap` disegna un pixel per settore (colore della stella più luminosa, tono dal numero di sistemi, bagliore della densità con i colori delle nebulose dove i sistemi sono pochi); `regionMap` un blocco per settore con ogni sistema come punto colorato per classe; `systemView` la vista dall'alto di un sistema a un tick, con scala logaritmica delle distanze.
 - **Rarità**: i fenomeni rari hanno una distribuzione controllata e devono essere trovabili esplorando. Da progettare allo step 8.
 
 ## 10. Tempo
 
-- Il tempo è un **tick intero**. L'app fa avanzare il tick di un moltiplicatore per frame (pausa = 0).
+- Il tempo è un **tick intero**: un tick è un'ora di gioco, un anno 8766 tick. L'app fa avanzare il tick di un moltiplicatore per frame (pausa = 0).
 - **Lo stato a un tick si calcola direttamente dal tick**, senza simulazione incrementale: posizioni orbitali, rotazioni e nuvole sono funzioni di (seed, tick). Saltare nel tempo costa O(1) e un link con un tick riporta esattamente allo stesso stato.
 - Le fasi si calcolano con il modulo intero prima di passare ai float: `phase = (tick % period) / period`. Così la precisione non degrada con tick grandi (fino a 2^53).
+- **Orbite su binari** (`universe/orbit.ts`): `Orbit { a, e, omega, period, phase }` con periodo e fase interi in tick; la posizione risolve l'equazione di Keplero con 12 passi di Newton fissi (partenza da π per e ≥ 0,8), tutto con `core/dmath`. Periodo `8766 · a^1.5 / √M` tick attorno alle stelle; le lune `k · a^1.5` tick con `a` in raggi del pianeta (k = 1,4 per i pianeti rocciosi, 3 per i giganti, meno densi).
+- **Rotazioni**: `Rotation { period, phase }` in tick; il generatore riceve `period` nella ricetta e `rotationFrame(rotation, tick)` come frame. Nelle animazioni a passo lungo (`forge system --frames`) le rotazioni avanzano di un frame per fotogramma, altrimenti il campionamento le farebbe saltare.
 
 ## 11. Forge e workflow
 
@@ -434,6 +446,10 @@ Le ottave in meno non cambiano la normalizzazione (si somma un prefisso della st
 | `sizes <gen>` | Lo stesso oggetto a più dimensioni affiancate (`--sizes 16,32,64,128,256`), per la coerenza tra gradini |
 | `chunks <gen>` | Griglia di chunk accostati senza spazi (`--x 0..2 --y 0..2`), per controllare le cuciture degli sfondi |
 | `scene <scena.json>` | Sfondo e oggetti composti da un file JSON (esempio: `recipes/scenes/step5.json`), con la luce di ogni oggetto che viene dal sole della scena |
+| `galaxy` | Mappa della galassia intera, un pixel per settore (`--galaxy n`), o di una regione ingrandita (`--center sx,sy --radius 12 --cell 12`) |
+| `system <indirizzo>` | Vista di un sistema al tick dato (`--tick`, `--size 384`) e descrizione di tutti i corpi; con `--frames n` (e `--step t`, default un giro del pianeta più interno) una GIF con il tempo che scorre |
+| `systems` | Foglio di viste di sistemi scelti a caso tra quelli della galassia (`--count 16 --seed`), con gli indirizzi |
+| `census` | Statistiche su molti sistemi (`--count 10000`) confrontate con gli intervalli attesi; esce con errore se qualcuna è fuori |
 | `anim <gen>` | GIF in loop (`--frames`, default un giro del generatore, `--fps 24`); `--strip` scrive anche la striscia dei frame in PNG |
 | `lint <gen>` | Esegue i validatori su molti seed (`--count 256`): quanti passano al primo tentativo, quanti dopo i ritentativi, quanti mai, e perché |
 | `golden check\|update [gen]` | Confronta con `tests/golden/<gen>.json`, o lo riscrive consapevolmente |
@@ -474,7 +490,7 @@ Fuori dalla CLI: `npm run bench` (benchmark del core, §5.4) e `npm run palette`
 | 3 | **Forge CLI**: registro dei generatori, schema delle ricette, ritentativi, generatore di prova; render, sheet, params, anim, lint, golden, list, swatches, zoom | fatto |
 | 4 | **Pianeti**: 9 archetipi con preset, mappe di superficie e nuvole, rotazione, terminatore, atmosfera, anelli, livello di dettaglio, descrittore, validatori; `forge sizes` | fatto |
 | 5 | **Stelle, asteroidi e sfondi**: 10 classi spettrali, 4 materiali di asteroide, sfondo a chunk con parallasse, nebulose e galassie; `forge chunks` e `forge scene` | fatto |
-| 6 | **Universo**: galassia, settori, sistemi, orbite, nomi, indirizzi | |
+| 6 | **Universo**: galassia con bracci, nucleo, vuoti e ammassi; settori e carattere; sistemi con stelle multiple, pianeti per zona, lune, anelli, fasce, comete; orbite su binari; nomi e sigle; indirizzi; mappe e `forge galaxy`, `system`, `systems`, `census` | fatto |
 | 7 | **Esploratore**: renderer, zoom continuo a gradini con cache, tempo, interfaccia, pannello informativo; `forge view` | |
 | 8 | **Fenomeni rari e megastrutture**: buchi neri, pulsar, rovine, megastrutture | |
 | 9 | **Catalogo e scoperte**: catalogo personale, link agli indirizzi | |
@@ -551,17 +567,29 @@ Formato: data, step, decisione e motivo. Le voci non si cancellano: se una decis
 - **2026-09-26, step 5: SDF e rasterizzazione non servono ancora.** Anche le silhouette degli asteroidi si calcolano per pixel in coordinate polari; resta da valutare per le megastrutture (step 8).
 - **2026-09-26, step 5: `forge chunks` e `forge scene`.** Il primo serve per le cuciture, il secondo compone sfondo e oggetti a 480×270 con la luce che viene dal sole della scena: una prima versione di ciò che farà `forge view` allo step 7.
 - **2026-09-26, step 5: timeout dei test a 30 s.** Golden e test end to end rendono tutti i generatori; in parallelo, con cinque generatori, superavano i 5 s di default di Vitest.
+- **2026-09-27, step 6: una galassia finita su una griglia infinita.** Risolve la questione aperta sulla forma dell'universo: la densità si spegne oltre il disco, la griglia di settori continua vuota (e ogni settore resta generabile). Una sola galassia per seed; più galassie sarebbero un livello sopra, senza cambiare gli indirizzi dei settori.
+- **2026-09-27, step 6: numero di sistemi binomiale.** Su 16 celle con probabilità dalla densità: limitato a 16 senza tagli, media proporzionale alla densità, e ogni sistema ha una cella distinta della griglia 4 × 4 (nessuna sovrapposizione sulle mappe).
+- **2026-09-27, step 6: carattere continuo.** Dalla prima mappa di regione: il colore delle nebulose deciso per settore faceva gradini. `Galaxy.character` è definito in ogni punto e le mappe sfumano con il dither anche i confini tra rampe.
+- **2026-09-27, step 6: bagliore sotto le stelle.** Con un pixel colorato per ogni settore abitato la galassia intera era un rumore arancione. Ora i settori con pochi sistemi e senza stelle luminose mostrano il bagliore della densità con i colori della regione (nucleo caldo, nebulose nei bracci): i bracci si leggono, il nucleo con la barra spicca, gli ammassi globulari sono punti isolati.
+- **2026-09-27, step 6: indici dei corpi in decimale.** Il test di round-trip ha trovato l'ambiguità di `p2m1` in base 36 (`m` è una cifra); galassia, settore e sistema restano in base 36, i corpi usano indici decimali.
+- **2026-09-27, step 6: fasce al posto di un'orbita.** Una fascia occupa uno slot della sequenza di orbite (0,9–1,1 volte il semiasse), con probabilità più alta al primo slot oltre la linea della neve: rispetta per costruzione lo stesso margine dei pianeti. Le fasce "negli spazi larghi" del piano erano sempre troppo sottili, perché il rapporto tra orbite è al massimo 2,2.
+- **2026-09-27, step 6: pesi delle classi tarati sul censimento.** I primi pesi davano A 5,6% e B+O 3,4%, perché la popolazione giovane è più diffusa del previsto; ora ogni valore sta nell'intervallo atteso su sette galassie diverse, con margine. Il primo semiasse è passato da 0,1–0,35 a 0,15–0,5 √L: con il valore del piano il 56% dei pianeti era nella zona calda.
+- **2026-09-27, step 6: periodi delle lune dalla densità.** `4 · a^1.5` del piano dava alla Luna 77 giorni; con 1,4 per i rocciosi e 3 per i giganti (meno densi) Luna e Io tornano ai periodi reali.
+- **2026-09-27, step 6: mappe in `gen/maps/`, non nel registro.** Sono grafica, quindi stanno in `gen/`, ma leggono oggetti dell'universo e non una ricetta; come funzioni semplici le potrà usare anche l'app allo step 7. Le stelle, i pianeti e gli asteroidi dentro le mappe passano dal registro, con la luce che viene dal centro del sistema.
+- **2026-09-27, step 6: scala logaritmica nella vista di sistema.** Le orbite, con rapporti costanti tra semiassi, diventano quasi equidistanti; le ellissi si disegnano campionando l'orbita vera e scalando ogni punto lungo il raggio. La coppia stretta si disegna a distanza esagerata attorno al centro, la terza stella al bordo nella sua direzione vera.
+- **2026-09-27, step 6: golden dell'universo.** `tests/golden/universe.json` fissa forma di due galassie, alcuni settori e 12 sistemi (riassunto leggibile più impronta del JSON completo): un indirizzo non deve cambiare destinazione senza alzare `UNIVERSE_VERSION`.
+- **2026-09-27, step 6: stampa del censimento nei test della CLI.** I test dei moduli puri non hanno `console` (tsconfig senza tipi): il test di `universe/` verifica gli intervalli, quello di `forge census` su 10 000 sistemi stampa la tabella.
 
 ## 15. Questioni aperte
 
 - **Spazio nella palette**: la palette è piena (63 su 63). Le stelle sono entrate riusando intervalli di toni; i fenomeni dello step 8 (buchi neri, pulsar) e le megastrutture potrebbero richiedere rampe nuove, quindi più condivisione o un limite più alto. Step 8.
 - **Cache nell'app**: la scelta del tentativo (resa canonica) e gli sprite per gradino vanno messi in cache per (generatore@versione, ricetta, seed). Step 7.
 - **Determinismo verificato anche nel browser**: come confrontare gli stessi golden in Node e nel browser. Step 3 o 7.
-- **Descrittore senza rasterizzare**: il descrittore dei pianeti viene già dalle mappe e non dai pixel, ma `generate` disegna sempre. Per l'universo servirà un `describe(recipe, seed)` senza resa, per il pannello e per cercare oggetti rari da lontano. Step 6.
-- **Forma dell'universo**: una galassia finita su un piano infinito di settori, o altro? Step 6.
+- **Descrittore senza rasterizzare**: l'universo ora sa *che cosa* è ogni corpo senza disegnarlo (archetipo, zona, raggio, orbite), che basta per le mappe e per cercare oggetti; il descrittore visivo (coperture, colori) richiede ancora `generate`. Un `describe(recipe, seed)` senza resa servirà al pannello informativo. Step 7.
+- **Costo del generatore di pianeti ai gradini piccoli**: circa 44 ms anche a 16–24 px (mappe sulla sfera e normalizzazione non dipendono dalla dimensione); una vista di sistema costa 0,4 s. Nell'app servono cache degli sprite e forse mappe a risoluzione ridotta per i gradini piccoli. Step 7.
 - **Gradini di dimensione**: quali (potenze di 2, √2…) e budget della cache. Step 7.
 - **Persistenza del catalogo**: storage del browser, export, entrambi. Step 9.
-- **Illuminazione dalla stella**: il descrittore delle stelle ha `intensity`; resta da decidere se l'intensità e il colore della stella cambiano l'aspetto dei pianeti (per esempio il livello di ambiente) o solo la direzione della luce. Step 6–7.
+- **Illuminazione dalla stella**: nella vista di sistema la luce viene dal centro, solo come direzione. Resta da decidere se `intensity` e colore della stella cambiano l'aspetto dei pianeti (per esempio il livello di ambiente). Step 7.
 - **Prestazioni nel browser**: i tempi del §5.4 sono misurati in Node; vanno verificati nell'app. Step 7.
 
-Risolte (vedi Decisioni): allo step 1 dimensione dei seed, `derive` a più componenti, indice 0 trasparente; allo step 2 palette unica globale, numero di rampe e di toni; allo step 3 formato dei golden dei generatori.
+Risolte (vedi Decisioni): allo step 1 dimensione dei seed, `derive` a più componenti, indice 0 trasparente; allo step 2 palette unica globale, numero di rampe e di toni; allo step 3 formato dei golden dei generatori; allo step 6 forma dell'universo e formato degli indirizzi.

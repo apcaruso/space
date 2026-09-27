@@ -51,6 +51,9 @@ Dopo ogni modifica visiva:
 | Cuciture tra chunk di uno sfondo | `chunks background --x 0..2 --y 0..2 --scale 2`, poi `zoom` sugli incroci |
 | L'insieme: oggetti e sfondo con la luce del sole | `scene recipes/scenes/<scena>.json` |
 | Palette e rampe | `swatches` (fogli in `out/palette.png` e `out/palette-shading.png`) |
+| Forma della galassia | `galaxy --galaxy n` (intera), `galaxy --center sx,sy --radius 12` (regione): bracci e nucleo devono leggersi, non un rumore uniforme |
+| Sistemi e orbite | `systems` (16 sistemi a caso con indirizzo), poi `system <indirizzo> --tick n`; il tempo che scorre con `--frames 48` (per guardarlo, rendi alcune PNG a tick diversi) |
+| Distribuzioni dell'universo | `census` (10 000 sistemi contro gli intervalli attesi di `universe/census.ts`) |
 | L'output è cambiato? | `golden check`; dopo un cambio voluto: alza la versione del generatore e `golden update <gen>` |
 | Generatori e parametri disponibili | `list` |
 
@@ -62,12 +65,12 @@ Usa sempre `--bg` per guardare: su trasparenza le etichette chiare non si leggon
 |---|---|
 | `npm run check` | typecheck + lint + test |
 | `npm test` | Vitest una volta (`npm run test:watch` in watch) |
-| `npm test -- -u` | Rigenera il golden del core (`tests/golden/core.json`): solo per cambi voluti, annotati in Decisioni |
+| `npm test -- -u` | Rigenera i golden del core e dell'universo (`tests/golden/core.json`, `universe.json`): solo per cambi voluti, annotati in Decisioni (per l'universo alza `UNIVERSE_VERSION`) |
 | `npm run bench` | Benchmark del core in Node (`forge/bench.ts`) |
 | `npm run palette` | Rigenera `style/palette.json` da `style/ramps.json` (mai modificare palette.json a mano) |
 | `npm run lint` | ESLint, comprese le regole di determinismo |
 | `npm run typecheck` | `tsc -b` su tutti i tsconfig |
-| `npm run forge -- <cmd>` | CLI forge: `render`, `sheet`, `params`, `sizes`, `anim`, `chunks`, `scene`, `lint`, `golden`, `list`, `swatches`, `zoom`; `help <cmd>` per le opzioni |
+| `npm run forge -- <cmd>` | CLI forge: `render`, `sheet`, `params`, `sizes`, `anim`, `chunks`, `scene`, `galaxy`, `system`, `systems`, `census`, `lint`, `golden`, `list`, `swatches`, `zoom`; `help <cmd>` per le opzioni |
 | `npm run dev` / `npm run build` | App Vite (root `app/`, build in `dist/`) |
 
 ## Dove sta cosa
@@ -76,14 +79,17 @@ Usa sempre `--bg` per guardare: su trasparenza le etichette chiare non si leggon
 core/       hash, derive, Rng, dmath, rumore, buffer, impronte                       (puro)
 toolkit/    colore, palette e tabelle, luce, dither, shade, outline, pulizia, font   (puro)
 gen/        registry, schema, index (elenco), testdisc, planet/, star/, asteroid/,
-            background/; poi phenomena, megastructure, ui                            (puro)
-universe/   galassia, settori, sistemi, orbite, nomi, indirizzi                      (puro)
+            background/, maps/ (mappe di galassia e sistemi); poi phenomena,
+            megastructure, ui                                                        (puro)
+universe/   coords, galaxy (forma, settori), stars, system (sistemi), orbit, names,
+            address (indirizzi), census (statistiche)                               (puro)
 style/      ramps.json (parametri) -> palette.json (generata): 63 colori + trasparente
 recipes/    preset (planets/*.json), scene di prova (scenes/*.json), oggetti speciali
 forge/      CLI (cli.ts, run.ts, commands/), golden dei generatori, script palette e bench
 app/        esploratore nel browser
-docs/       DESIGN.md
-tests/      golden/core.json (core) e golden/<gen>.json (generatori): impronte attese
+docs/       DESIGN.md, plans/ (piani scritti prima del codice, es. step-06.md)
+tests/      golden/core.json (core), golden/universe.json (universo) e golden/<gen>.json
+            (generatori): impronte attese
 out/        preview generate (ignorata da git)
 ```
 

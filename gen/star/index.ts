@@ -2,7 +2,7 @@
 // whose corona shimmers with palette cycling. No terminator: stars make their own light.
 
 import { IndexedBuffer } from '../../core/buffer';
-import { atan2, cos, LN10, log, pow, sin, TAU } from '../../core/dmath';
+import { atan2, cos, pow, sin, TAU } from '../../core/dmath';
 import { derive } from '../../core/hash';
 import { createCellSample, gradientNoise2, worley3 } from '../../core/noise';
 import { Rng } from '../../core/rng';
@@ -10,7 +10,8 @@ import { BAYER2, BAYER4, bayerThreshold, ditherQuantize } from '../../toolkit/di
 import { applyTable, masterPalette } from '../../toolkit/palette';
 import { defineGenerator } from '../registry';
 import { choice, int, num, obj, type Infer } from '../schema';
-import { CLASS_IDS, STAR_CLASSES, starClass, type StarClass } from './classes';
+import { starIdentity } from '../../universe/stars';
+import { CLASS_IDS, STAR_CLASSES, starClass } from './classes';
 
 const palette = masterPalette();
 
@@ -49,19 +50,6 @@ function resolveStar(input: unknown, seed: number): unknown {
 
 function phase(frame: number, period: number): number {
   return (((frame % period) + period) % period) / period;
-}
-
-/** Catalogue data: spectral label, temperature and luminosity from the class and the seed. */
-function identity(cls: StarClass, seed: number): { label: string; temperature: number; luminosity: number; intensity: number } {
-  const rng = new Rng(derive(seed, 'subclass'));
-  const sub = rng.int(0, 9);
-  const t = 1 - sub / 9; // subclass 0 is the hottest
-  const temperature = Math.round(cls.temperature[0] + (cls.temperature[1] - cls.temperature[0]) * t);
-  const [l0, l1] = cls.luminosity;
-  const luminosity = Number((l0 * pow(l1 / l0, t)).toPrecision(3));
-  const label = cls.id === 'neutron' ? 'NS' : cls.id === 'white-dwarf' ? `D${sub}` : `${cls.letter}${sub} ${cls.luminosityClass}`;
-  const intensity = Math.round(Math.min(1, Math.max(0.05, (log(luminosity) / LN10 + 5) / 10.7)) * 1000) / 1000;
-  return { label, temperature, luminosity, intensity };
 }
 
 export const star = defineGenerator({
@@ -185,7 +173,7 @@ export const star = defineGenerator({
     const flowing = applyTable(streamers, palette.cycleTable(cls.corona.ramp, -Math.floor(opts.frame / r.corona.cycle), { from: cls.corona.lo, to: cls.corona.hi }));
     const buffer = glow.blit(flowing, 0, 0).blit(disc, 0, 0);
 
-    const id = identity(cls, seed);
+    const id = starIdentity(cls.id, seed);
     return {
       buffer,
       descriptor: {

@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "galaxy 0": {
+    "radius": "236.067879",
+    "arms": 2,
+    "bar": "33.836659",
+    "pitch": "0.346562"
+  },
+  "galaxy 0 sectors": [
+    "0,0: sistemi 16, età 1, nebulosa 0.278 gas-warm, stile 2",
+    "-12,40: sistemi 1, età 0.736, nebulosa 0.015 crystal-magenta, stile 4",
+    "37,-5: sistemi 4, età 0.516, nebulosa 0.105 gas-violet, stile 0",
+    "150,150: sistemi 0, età 0.745, nebulosa 0.001 crystal-teal, stile 2"
+  ],
+  "galaxy 0 systems": [
+    "0.8.-6d.0 Teba AE-1977 K4 V [desert dead] 9f01a464",
+    "0.-27.7c.2 Kry YP-7515 M3 V [lava+1 ocean+1] 91813246",
+    "0.h.1p.0 Zhusii BQ-1385 G5 V [toxic+1 lava+1 terran+1 toxic dead ice+1 gas+6 ice+1] 9b3aa802",
+    "0.1.-b.8 Oamuwa JB-6544 G6 V [desert lava dead] 38d6dc2a",
+    "0.-2w.-n.0 Cali HS-8459 M5 V [desert+2 dead+1 ice+1 gas+5] c531e45b",
+    "0.-w.1v.0 Mi-Fan FW-9821 M3 V [dead] b7761952"
+  ],
+  "galaxy 1": {
+    "radius": "214.203503",
+    "arms": 3,
+    "bar": "27.906553",
+    "pitch": "0.207767"
+  },
+  "galaxy 1 sectors": [
+    "0,0: sistemi 16, età 0.976, nebulosa 0.082 gas-warm, stile 1",
+    "-12,40: sistemi 2, età 0.451, nebulosa 0.192 gas-violet, stile 1",
+    "37,-5: sistemi 7, età 0.389, nebulosa 0.268 crystal-magenta, stile 3",
+    "150,150: sistemi 0, età 0.747, nebulosa 0.021 crystal-magenta, stile 4"
+  ],
+  "galaxy 1 systems": [
+    "1.-1j.n.1 Zaax UY-2696 M2 III [lava dead ice+1] 8ff1492d",
+    "1.1x.n.0 Saashu LF-2779 F0 V [toxic+1 toxic desert terran+1 cratered+1 dead cratered+1] 0f364140",
+    "1.29.2w.1 Vyth HQ-7324 B9 V [toxic+1 lava] f4e1c021",
+    "1.-n.-13.2 Lemessa QB-1761 K4 V [lava+1 lava+1 terran+1] 10b265d5",
+    "1.-20.s.4 Gaz AM-1064 M9 V [dead ice ice+1] 4cfd4cd5",
+    "1.f.2a.0 Kyn'zen EH-3080 M1 V [desert toxic+1 terran] 009fbdba"
+  ]
+}
