@@ -1,6 +1,28 @@
+# dependencies and build output
 node_modules/
-out/
 dist/
 coverage/
 *.tsbuildinfo
+
+# forge previews (regenerate with npm run forge)
+out/
+
+# logs
+*.log
+npm-debug.log*
+
+# local environment
+.env
+.env.*
+
+# editors and OS
 .DS_Store
+.vscode/
+.idea/
+*.swp
+
+# local Claude Code settings
+.claude/settings.local.json
+
+# private notes
+recap.md

@@ -1,0 +1,21 @@
+{
+  "width": 480,
+  "height": 270,
+  "background": { "seed": 21, "recipe": { "layer": "all", "region": { "nebula": 0.3 } } },
+  "sun": { "x": -240, "y": -120, "elevation": 20 },
+  "objects": [
+    { "gen": "planet", "seed": 1, "size": 56, "x": 56, "y": 66, "recipe": { "archetype": "terran" } },
+    { "gen": "planet", "seed": 1, "size": 56, "x": 152, "y": 66, "recipe": { "archetype": "ocean" } },
+    { "gen": "planet", "seed": 2, "size": 56, "x": 248, "y": 66, "recipe": { "archetype": "desert" } },
+    { "gen": "planet", "seed": 0, "size": 56, "x": 344, "y": 66, "recipe": { "archetype": "ice" } },
+    { "gen": "planet", "seed": 2, "size": 56, "x": 440, "y": 66, "recipe": { "archetype": "lava" } },
+    { "gen": "planet", "seed": 2, "size": 56, "x": 56, "y": 196, "recipe": { "archetype": "toxic" } },
+    { "gen": "planet", "seed": 2, "size": 72, "x": 180, "y": 196, "recipe": { "archetype": "gas", "rings": { "chance": 1 } } },
+    { "gen": "planet", "seed": 1, "size": 40, "x": 306, "y": 186, "recipe": { "archetype": "cratered" } },
+    { "gen": "planet", "seed": 2, "size": 48, "x": 420, "y": 196, "recipe": { "archetype": "dead" } },
+    { "gen": "asteroid", "seed": 1, "size": 14, "x": 290, "y": 236, "recipe": { "material": "rocky" } },
+    { "gen": "asteroid", "seed": 3, "size": 16, "x": 322, "y": 246, "recipe": { "material": "metallic" } },
+    { "gen": "asteroid", "seed": 4, "size": 10, "x": 350, "y": 226, "recipe": { "material": "icy" } },
+    { "gen": "asteroid", "seed": 5, "size": 12, "x": 360, "y": 252, "recipe": { "material": "crystalline" } }
+  ]
+}

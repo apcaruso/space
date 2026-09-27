@@ -1,0 +1,18 @@
+{
+  "width": 480,
+  "height": 200,
+  "background": { "seed": 5, "recipe": { "layer": "all", "region": { "nebula": 0.2 } } },
+  "sun": { "x": 240, "y": -400, "elevation": 20 },
+  "objects": [
+    { "gen": "star", "seed": 0, "size": 26, "x": 52, "y": 54, "recipe": { "class": "O" } },
+    { "gen": "star", "seed": 0, "size": 26, "x": 146, "y": 54, "recipe": { "class": "B" } },
+    { "gen": "star", "seed": 0, "size": 26, "x": 240, "y": 54, "recipe": { "class": "A" } },
+    { "gen": "star", "seed": 0, "size": 26, "x": 334, "y": 54, "recipe": { "class": "F" } },
+    { "gen": "star", "seed": 0, "size": 26, "x": 428, "y": 54, "recipe": { "class": "G" } },
+    { "gen": "star", "seed": 0, "size": 26, "x": 52, "y": 146, "recipe": { "class": "K" } },
+    { "gen": "star", "seed": 0, "size": 26, "x": 146, "y": 146, "recipe": { "class": "M" } },
+    { "gen": "star", "seed": 0, "size": 26, "x": 240, "y": 146, "recipe": { "class": "red-giant" } },
+    { "gen": "star", "seed": 0, "size": 26, "x": 334, "y": 146, "recipe": { "class": "white-dwarf" } },
+    { "gen": "star", "seed": 0, "size": 26, "x": 428, "y": 146, "recipe": { "class": "neutron" } }
+  ]
+}

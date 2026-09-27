@@ -93,7 +93,7 @@ recipes/    preset (planets/*.json), scene di prova (scenes/*.json), oggetti spe
 forge/      CLI (cli.ts, run.ts, commands/), golden dei generatori, script palette e bench
 app/        esploratore nel browser: main (canvas, input, loop, URL), sprites (pool di
             worker), worker
-docs/       DESIGN.md, plans/ (piani scritti prima del codice, es. step-07.md)
+docs/       DESIGN.md, plans/ (piani scritti prima del codice, es. step-07.md), images/ (README)
 tests/      golden/core.json (core), universe.json (universo), view.json (viste) e
             golden/<gen>.json (generatori): impronte attese
 out/        preview generate (ignorata da git)

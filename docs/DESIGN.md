@@ -23,7 +23,7 @@ Un esploratore dell'universo in pixel art: un'app 2D in cui si naviga direttamen
 
 Conseguenze:
 
-- Nel repo non ci sono asset grafici. I PNG in `out/` sono preview locali (ignorate da git); gli eventuali golden sono dati di test, non asset.
+- Nel repo non ci sono asset grafici. I PNG in `out/` sono preview locali (ignorate da git); gli eventuali golden sono dati di test, non asset. Le immagini del README in `docs/images/` sono documentazione resa da `forge`: il codice non le legge mai.
 - Lo sviluppo visivo consiste nello scrivere e tarare generatori guardando i PNG di preview prodotti dalla CLI `forge`.
 - Se un oggetto “sembra sbagliato”, si corregge il generatore o la ricetta, mai il singolo output.
 
@@ -640,6 +640,7 @@ Formato: data, step, decisione e motivo. Le voci non si cancellano: se una decis
 - **2026-09-27, step 7: l'inseguimento tiene il corpo dove sta.** Selezionare un pianeta lo riportava al centro con un salto (e il doppio clic successivo mancava il bersaglio); ora la camera lo segue mantenendo il suo scostamento sullo schermo, e lo zoom avviene attorno al corpo.
 - **2026-09-27, step 7: font esteso e 5×7 disegnati a mano, accenti da codice.** Come il 3×5, i glifi sono bit scritti a mano (l'unica eccezione al principio); le lettere accentate sono la lettera base più un segno generato. `á` non c'è nel 3×5: sarebbe identica a `d`.
 - **2026-09-27, step 7: ricerca per nome nei worker, per anelli di settori.** I nomi non stanno nel catalogo (calcolarli per 145 000 sistemi costa secondi): la ricerca li calcola settore per settore a partire dalla camera e restituisce i 10 più vicini. Cerca nomi e sigle dei sistemi, non ancora i nomi propri dei pianeti.
+- **2026-09-27, dopo lo step 7: immagini del README nel repo.** Per la pubblicazione su GitHub il README mostra l'esploratore e i generatori. Le immagini stanno in `docs/images/` e non sono asset: nessun modulo le importa, e si rigenerano con forge (`view 0.h.1p.0.p2 --zoom galaxy --zoom-to surface --frames 144 --scale 2 --no-select` per la GIF; `view 0 --no-select`, `view 0.h.1p.0 --zoom system`, `view 0.h.1p.0.p2 --zoom body|surface`, tutte con `--tick 1000 --scale 2`, per le viste; `scene recipes/scenes/readme-planets.json` e `readme-stars.json` per le tavole).
 
 ## 16. Questioni aperte
 
